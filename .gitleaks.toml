@@ -1,0 +1,4 @@
+title = "skillstreak gitleaks configuration"
+
+[extend]
+useDefault = true

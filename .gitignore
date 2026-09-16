@@ -1,0 +1,37 @@
+# Python and test tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.venv/
+venv/
+
+# Django/application artifacts
+*.sqlite3
+staticfiles/
+media/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Docker local state
+docker-data/
+
+# Playwright and browser test artifacts
+playwright-report/
+test-results/
+blob-report/
+
+# Editors and operating system files
+.DS_Store
+.idea/
+.vscode/
