@@ -31,9 +31,9 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-psycopg==3.3.5
+psycopg==3.3.6
     # via -r requirements.in
-psycopg-binary==3.3.5
+psycopg-binary==3.3.6
     # via psycopg
 pyee==13.0.1
     # via playwright
