@@ -80,7 +80,7 @@ jobs:
           load: true
           tags: skillstreak:pr
       - name: Scan image for critical vulnerabilities
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: skillstreak:pr
           format: table
