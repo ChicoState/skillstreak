@@ -1,0 +1,9 @@
+# Application and development tooling. `requirements.txt` is the resolved lockfile.
+Django>=5.2.17,<5.3
+psycopg[binary]>=3.2,<3.4
+pip-tools>=7.5,<8
+pytest>=9,<10
+pytest-cov>=7,<8
+pytest-django>=4.11,<5
+playwright>=1.58,<2
+ruff>=0.15,<0.16

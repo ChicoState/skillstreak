@@ -1,0 +1,25 @@
+name: skillstreak
+
+services:
+  db:
+    image: postgres:17.7-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-skillstreak}
+      POSTGRES_USER: ${POSTGRES_USER:-skillstreak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-for-local-development}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks: [application]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+networks:
+  application:
+    internal: true
+
+volumes:
+  postgres-data:
