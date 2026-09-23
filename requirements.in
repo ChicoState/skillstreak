@@ -1,5 +1,5 @@
 # Application and development tooling. `requirements.txt` is the resolved lockfile.
-Django>=5.2.17,<5.3
+Django>=6.1.1,<6.2
 psycopg[binary]>=3.2,<3.4
 pip-tools>=7.5,<8
 pytest>=9,<10
