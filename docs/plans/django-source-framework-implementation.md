@@ -12,7 +12,7 @@ The framework was delivered in the following pushed commits:
 - `8f6dd10` — Django package, local settings, and liveness endpoint.
 - `ad013e8` — secure production settings and their tests.
 - `4db8b34` — Gunicorn runtime command, health check, and lockfile.
-- This commit — Docker Compose web workflow, documentation, and external-port
+- `8d91b2f` — Docker Compose web workflow, documentation, and external-port
   regression coverage.
 
 Final verification passed with six tests and 96.91% coverage, Ruff formatting
@@ -76,12 +76,12 @@ Run it before project code exists to demonstrate the red state.
 
 **Acceptance criteria:**
 
-- [ ] Pytest discovers Django tests from `src` using local settings.
-- [ ] The health-check test fails because the project implementation is absent.
+- [x] Pytest discovers Django tests from `src` using local settings.
+- [x] The health-check test fails because the project implementation is absent.
 
 **Verification:**
 
-- [ ] Build the current runtime image with
+- [x] Build the current runtime image with
   `docker build --target runtime --tag skillstreak-framework-test .`, then run
   `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test pytest tests/application/test_health.py`.
   It fails for the expected missing-project behavior. Compose cannot run this
@@ -99,16 +99,16 @@ and development-safe defaults; no migrations or domain apps are created.
 
 **Acceptance criteria:**
 
-- [ ] `manage.py check` loads `skillstreak.settings.local`.
-- [ ] The local database configuration targets the Compose `db` host.
-- [ ] Configuration does not contain a real secret.
+- [x] `manage.py check` loads `skillstreak.settings.local`.
+- [x] The local database configuration targets the Compose `db` host.
+- [x] Configuration does not contain a real secret.
 
 **Verification:**
 
-- [ ] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test python manage.py diffsettings`
+- [x] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test python manage.py diffsettings`
   loads the local settings successfully. Full `manage.py check` follows when
   the URL configuration exists in Task 3.
-- [ ] Ruff formatting and linting pass for the new files.
+- [x] Ruff formatting and linting pass for the new files.
 
 **Dependencies:** Task 1.
 
@@ -124,15 +124,15 @@ does not disclose configuration or query the database.
 
 **Acceptance criteria:**
 
-- [ ] `GET /healthz` returns HTTP 200.
-- [ ] The response does not require a database connection.
-- [ ] Both ASGI and WSGI point to local settings by default.
+- [x] `GET /healthz` returns HTTP 200.
+- [x] The response does not require a database connection.
+- [x] Both ASGI and WSGI point to local settings by default.
 
 **Verification:**
 
-- [ ] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test pytest tests/application/test_health.py`
+- [x] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test pytest tests/application/test_health.py`
   passes.
-- [ ] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test ruff format --check .`
+- [x] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test ruff format --check .`
   and `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test ruff check .`
   pass.
 
@@ -144,9 +144,9 @@ does not disclose configuration or query the database.
 
 ### Checkpoint: Application foundation
 
-- [ ] Health test passes after first failing.
-- [ ] `python manage.py check` passes in the web container.
-- [ ] Working changes are committed as an atomic application-foundation slice.
+- [x] Health test passes after first failing.
+- [x] `python manage.py check` passes in the web container.
+- [x] Working changes are committed as an atomic application-foundation slice.
 
 ### Task 4: Add and test production settings
 
@@ -157,17 +157,17 @@ to a TLS-terminating Cloud Run deployment.
 
 **Acceptance criteria:**
 
-- [ ] Production settings fail clearly when required values are absent.
-- [ ] With required values supplied, production settings load and
+- [x] Production settings fail clearly when required values are absent.
+- [x] With required values supplied, production settings load and
   `DEBUG=False`.
-- [ ] `check --deploy` runs against production settings in a controlled test
+- [x] `check --deploy` runs against production settings in a controlled test
   environment.
 
 **Verification:**
 
-- [ ] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test pytest tests/application/test_production_settings.py`
+- [x] `docker run --rm --volume "$PWD:/app" --workdir /app skillstreak-framework-test pytest tests/application/test_production_settings.py`
   passes.
-- [ ] A `docker run` command with
+- [x] A `docker run` command with
   `DJANGO_SETTINGS_MODULE=skillstreak.settings.production` executes
   `python manage.py check --deploy` using non-secret test values.
 
@@ -184,14 +184,14 @@ liveness health check.
 
 **Acceptance criteria:**
 
-- [ ] `requirements.in` and `requirements.txt` include Gunicorn.
-- [ ] The image starts Gunicorn on the Cloud Run `PORT` (falling back to 8000).
-- [ ] Docker's health check calls `/healthz` without requiring `curl`.
+- [x] `requirements.in` and `requirements.txt` include Gunicorn.
+- [x] The image starts Gunicorn on the Cloud Run `PORT` (falling back to 8000).
+- [x] Docker's health check calls `/healthz` without requiring `curl`.
 
 **Verification:**
 
-- [ ] Lockfile regeneration matches CI's pip-tools validation.
-- [ ] `./scripts/smoke-image.sh` builds the image and verifies its liveness
+- [x] Lockfile regeneration matches CI's pip-tools validation.
+- [x] `./scripts/smoke-image.sh` builds the image and verifies its liveness
   endpoint.
 
 **Dependencies:** Tasks 3 and 4.
@@ -207,14 +207,14 @@ and a database-health dependency. Update templates and onboarding commands.
 
 **Acceptance criteria:**
 
-- [ ] `docker compose up --build` starts database then web service.
-- [ ] `curl --fail http://localhost:${APP_PORT:-8000}/healthz` succeeds.
-- [ ] The README and environment template describe the Docker-only workflow.
+- [x] `docker compose up --build` starts database then web service.
+- [x] `curl --fail http://localhost:${APP_PORT:-8000}/healthz` succeeds.
+- [x] The README and environment template describe the Docker-only workflow.
 
 **Verification:**
 
-- [ ] `docker compose config --quiet` passes.
-- [ ] `./scripts/check-infrastructure.sh`, `./scripts/smoke-image.sh`, and
+- [x] `docker compose config --quiet` passes.
+- [x] `./scripts/check-infrastructure.sh`, `./scripts/smoke-image.sh`, and
   `./scripts/smoke-postgres.sh` pass.
 
 **Dependencies:** Tasks 3 and 5.
@@ -223,11 +223,11 @@ and a database-health dependency. Update templates and onboarding commands.
 
 ### Checkpoint: Complete framework
 
-- [ ] Django tests and the 80% coverage gate pass.
-- [ ] Ruff formatting and lint checks pass.
-- [ ] The web container serves `/healthz` and the image health check passes.
-- [ ] Infrastructure smoke checks pass.
-- [ ] Each completed slice is committed separately.
+- [x] Django tests and the 80% coverage gate pass.
+- [x] Ruff formatting and lint checks pass.
+- [x] The web container serves `/healthz` and the image health check passes.
+- [x] Infrastructure smoke checks pass.
+- [x] Each completed slice is committed separately.
 
 ## Risks and Mitigations
 
