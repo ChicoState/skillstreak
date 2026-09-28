@@ -2,8 +2,9 @@
 
 SkillStreak is planned as a public, multi-account Django web application with
 PostgreSQL. This repository currently contains its development, quality, Docker,
-and delivery foundation only; no Django project, application routes, database
-schema, product code, or production deployment exists yet.
+delivery foundation, plus a minimal Django source framework and liveness route.
+No database schema, product apps, product routes, or production deployment
+exists yet.
 
 ## Repository map
 
@@ -67,7 +68,9 @@ schema, product code, or production deployment exists yet.
    ./scripts/smoke-postgres.sh
    ```
 
-   The PostgreSQL smoke test removes its disposable Compose volume when it finishes.
+   The PostgreSQL smoke test stops the Compose stack and removes its named
+   PostgreSQL volume when it finishes. Run it only when local database data is
+   disposable.
 6. Stop the local stack with `docker compose down`. Remove local database data
    deliberately with `docker compose down --volumes`.
 
@@ -82,20 +85,23 @@ migrations and browser workflows remain future product work.
 
 `requirements.txt` is the committed pip-tools lockfile. Pull requests verify the
 lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
-CodeQL, and an image build with a critical-vulnerability scan. Django checks,
-coverage (80% branch and line threshold), and browser tests are intentionally
-conditional on the future Django application bootstrap.
+CodeQL, and an image build with a critical-vulnerability scan. Django system
+checks and the 80% branch-and-line coverage gate now run in pull requests.
+Browser tests remain future product work.
 
 Release tags (`v*`) target Google Cloud Run through Artifact Registry. Before a
 release can run, create the Google Cloud project resources and GitHub production
 environment listed in `infrastructure_plan.md`: workload identity provider,
 service account, project/region/repository/service/migration-job variables, and
-Cloud Run-managed application secrets. The release workflow fails before cloud
-authentication while `manage.py` is absent.
+Cloud Run-managed application secrets. The release workflow now runs Django
+checks and tests before cloud authentication; it cannot deploy until the named
+Google Cloud and GitHub production configuration exists.
 
 ## Troubleshooting
 
 - **Docker connection refused or permission denied:** start Docker Desktop, then rerun the command.
-- **Port conflicts:** this foundation does not publish PostgreSQL to the host. A future application port will be configurable when its entrypoint exists.
+- **Port conflicts:** set `APP_PORT` in `.env` to choose a different web port.
+  PostgreSQL is not published to the host.
 - **Lockfile differs in CI:** regenerate it with the exact container command above and commit both dependency files.
-- **Cloud Run release is blocked:** create the Django project first, then configure Google Cloud Workload Identity Federation and the named GitHub production variables/secrets.
+- **Cloud Run release is blocked:** configure Google Cloud Workload Identity
+  Federation and the named GitHub production variables/secrets.
