@@ -14,6 +14,7 @@ schema, product code, or production deployment exists yet.
 | `compose.yml`, `Dockerfile`, `.dockerignore` | Local PostgreSQL and a hardened future application-image base | Ready; no Django entrypoint yet |
 | `scripts/` | Infrastructure validation and disposable Docker smoke tests | Ready |
 | `tests/infrastructure/` | Infrastructure-harness tests | Ready |
+| `docs/specs/` | Reviewed application and feature specifications | Bootstrap specification drafted |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
 | `src/`, Django project, API, frontend | Future application implementation | Not created yet |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
