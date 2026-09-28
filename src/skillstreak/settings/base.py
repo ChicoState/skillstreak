@@ -1,6 +1,10 @@
 """Shared Django settings for every SkillStreak environment."""
 
+import os
 from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 
@@ -49,3 +53,31 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+def database_configuration(database_url: str) -> dict[str, dict[str, str | int]]:
+    """Convert a PostgreSQL URL into Django's database configuration."""
+    parsed_url = urlparse(database_url)
+    if parsed_url.scheme not in {"postgres", "postgresql"} or not parsed_url.path:
+        message = "DATABASE_URL must be a PostgreSQL connection URL."
+        raise ImproperlyConfigured(message)
+
+    return {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": unquote(parsed_url.path.lstrip("/")),
+            "USER": unquote(parsed_url.username or ""),
+            "PASSWORD": unquote(parsed_url.password or ""),
+            "HOST": parsed_url.hostname or "",
+            "PORT": parsed_url.port or "",
+        },
+    }
+
+
+def required_environment_value(name: str) -> str:
+    """Return a required deployment setting without exposing its value."""
+    value = os.getenv(name)
+    if value:
+        return value
+
+    raise ImproperlyConfigured(f"{name} must be set.")
