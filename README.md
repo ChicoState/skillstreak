@@ -11,12 +11,12 @@ schema, product code, or production deployment exists yet.
 |---|---|---|
 | `infrastructure_plan.md` | Approved infrastructure decisions | Current source of truth |
 | `requirements.in`, `requirements.txt`, `pyproject.toml` | Python dependencies, resolved lockfile, and tool configuration | Ready |
-| `compose.yml`, `Dockerfile`, `.dockerignore` | Local PostgreSQL and a hardened future application-image base | Ready; no Django entrypoint yet |
+| `compose.yml`, `Dockerfile`, `.dockerignore` | Local Django/PostgreSQL stack and hardened runtime image | Ready |
 | `scripts/` | Infrastructure validation and disposable Docker smoke tests | Ready |
-| `tests/infrastructure/` | Infrastructure-harness tests | Ready |
-| `docs/specs/` | Reviewed application and feature specifications | Bootstrap specification drafted |
+| `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
+| `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, Django project, API, frontend | Future application implementation | Not created yet |
+| `src/`, `manage.py` | Django project framework and liveness endpoint | Ready; product apps not created |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 
 ## Getting Started
@@ -36,7 +36,30 @@ schema, product code, or production deployment exists yet.
    docker run --rm --volume "$PWD:/workspace" --workdir /workspace python:3.14.7-slim-bookworm \
      sh -c 'python -m pip install "pip-tools>=7.5,<8" && python -m piptools compile --strip-extras --output-file requirements.txt requirements.in'
    ```
-4. Validate the static infrastructure configuration:
+4. Start the local Django and PostgreSQL services:
+
+   ```sh
+   docker compose up --build
+   ```
+
+   The application listens on `http://localhost:8000` by default. Set
+   `APP_PORT` in `.env` to choose another host port. Verify its liveness endpoint
+   from another terminal:
+
+   ```sh
+   curl --fail http://localhost:8000/healthz
+   ```
+
+   Run Django commands inside the Docker-only development service:
+
+   ```sh
+   docker compose exec web python manage.py check
+   docker compose exec web pytest
+   docker compose exec web ruff format --check .
+   docker compose exec web ruff check .
+   ```
+
+5. Validate the static infrastructure configuration:
 
    ```sh
    ./scripts/check-infrastructure.sh
@@ -45,14 +68,15 @@ schema, product code, or production deployment exists yet.
    ```
 
    The PostgreSQL smoke test removes its disposable Compose volume when it finishes.
-5. To keep the local PostgreSQL service running for future Django work, run
-   `docker compose up -d db`; stop it with `docker compose down`. Remove local
-   database data deliberately with `docker compose down --volumes`.
+6. Stop the local stack with `docker compose down`. Remove local database data
+   deliberately with `docker compose down --volumes`.
 
-The Docker image intentionally has no application command or health endpoint
-until the application phase creates a Django ASGI/WSGI entrypoint and `/healthz`.
-Similarly, full Django checks, coverage enforcement, migrations, and Playwright
-workflows activate after `manage.py` and application tests exist.
+The production image runs Gunicorn and reports a liveness-only `/healthz`
+endpoint; it does not query PostgreSQL. Cloud Run must supply
+`DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DATABASE_URL`,
+`DJANGO_SECRET_KEY`, and `ALLOWED_HOSTS` through managed configuration and
+secrets. Full Django checks and coverage enforcement now run in pull requests;
+migrations and browser workflows remain future product work.
 
 ## Quality and CI
 

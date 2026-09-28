@@ -1,6 +1,24 @@
 name: skillstreak
 
 services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://skillstreak:change-me-for-local-development@db:5432/skillstreak}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-replace-with-a-local-development-only-value}
+      DJANGO_SETTINGS_MODULE: skillstreak.settings.local
+    networks: [application]
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+
   db:
     image: postgres:17.7-bookworm
     environment:
@@ -18,8 +36,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
 networks:
-  application:
-    internal: true
+  application: {}
 
 volumes:
   postgres-data:
