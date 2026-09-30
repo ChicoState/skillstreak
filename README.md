@@ -2,8 +2,9 @@
 
 SkillStreak is planned as a public, multi-account Django web application with
 PostgreSQL. This repository currently contains its development, quality, Docker,
-and delivery foundation only; no Django project, application routes, database
-schema, product code, or production deployment exists yet.
+delivery foundation, plus a minimal Django source framework and liveness route.
+No database schema, product apps, product routes, or production deployment
+exists yet.
 
 ## Repository map
 
@@ -11,11 +12,12 @@ schema, product code, or production deployment exists yet.
 |---|---|---|
 | `infrastructure_plan.md` | Approved infrastructure decisions | Current source of truth |
 | `requirements.in`, `requirements.txt`, `pyproject.toml` | Python dependencies, resolved lockfile, and tool configuration | Ready |
-| `compose.yml`, `Dockerfile`, `.dockerignore` | Local PostgreSQL and a hardened future application-image base | Ready; no Django entrypoint yet |
+| `compose.yml`, `Dockerfile`, `.dockerignore` | Local Django/PostgreSQL stack and hardened runtime image | Ready |
 | `scripts/` | Infrastructure validation and disposable Docker smoke tests | Ready |
-| `tests/infrastructure/` | Infrastructure-harness tests | Ready |
+| `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
+| `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, Django project, API, frontend | Future application implementation | Not created yet |
+| `src/`, `manage.py` | Django project framework and liveness endpoint | Ready; product apps not created |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 
 ## Getting Started
@@ -35,7 +37,30 @@ schema, product code, or production deployment exists yet.
    docker run --rm --volume "$PWD:/workspace" --workdir /workspace python:3.14.7-slim-bookworm \
      sh -c 'python -m pip install "pip-tools>=7.5,<8" && python -m piptools compile --strip-extras --output-file requirements.txt requirements.in'
    ```
-4. Validate the static infrastructure configuration:
+4. Start the local Django and PostgreSQL services:
+
+   ```sh
+   docker compose up --build
+   ```
+
+   The application listens on `http://localhost:8000` by default. Set
+   `APP_PORT` in `.env` to choose another host port. Verify its liveness endpoint
+   from another terminal:
+
+   ```sh
+   curl --fail http://localhost:8000/healthz
+   ```
+
+   Run Django commands inside the Docker-only development service:
+
+   ```sh
+   docker compose exec web python manage.py check
+   docker compose exec web pytest
+   docker compose exec web ruff format --check .
+   docker compose exec web ruff check .
+   ```
+
+5. Validate the static infrastructure configuration:
 
    ```sh
    ./scripts/check-infrastructure.sh
@@ -43,34 +68,40 @@ schema, product code, or production deployment exists yet.
    ./scripts/smoke-postgres.sh
    ```
 
-   The PostgreSQL smoke test removes its disposable Compose volume when it finishes.
-5. To keep the local PostgreSQL service running for future Django work, run
-   `docker compose up -d db`; stop it with `docker compose down`. Remove local
-   database data deliberately with `docker compose down --volumes`.
+   The PostgreSQL smoke test stops the Compose stack and removes its named
+   PostgreSQL volume when it finishes. Run it only when local database data is
+   disposable.
+6. Stop the local stack with `docker compose down`. Remove local database data
+   deliberately with `docker compose down --volumes`.
 
-The Docker image intentionally has no application command or health endpoint
-until the application phase creates a Django ASGI/WSGI entrypoint and `/healthz`.
-Similarly, full Django checks, coverage enforcement, migrations, and Playwright
-workflows activate after `manage.py` and application tests exist.
+The production image runs Gunicorn and reports a liveness-only `/healthz`
+endpoint; it does not query PostgreSQL. Cloud Run must supply
+`DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DATABASE_URL`,
+`DJANGO_SECRET_KEY`, and `ALLOWED_HOSTS` through managed configuration and
+secrets. Full Django checks and coverage enforcement now run in pull requests;
+migrations and browser workflows remain future product work.
 
 ## Quality and CI
 
 `requirements.txt` is the committed pip-tools lockfile. Pull requests verify the
 lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
-CodeQL, and an image build with a critical-vulnerability scan. Django checks,
-coverage (80% branch and line threshold), and browser tests are intentionally
-conditional on the future Django application bootstrap.
+CodeQL, and an image build with a critical-vulnerability scan. Django system
+checks and the 80% branch-and-line coverage gate now run in pull requests.
+Browser tests remain future product work.
 
 Release tags (`v*`) target Google Cloud Run through Artifact Registry. Before a
 release can run, create the Google Cloud project resources and GitHub production
 environment listed in `infrastructure_plan.md`: workload identity provider,
 service account, project/region/repository/service/migration-job variables, and
-Cloud Run-managed application secrets. The release workflow fails before cloud
-authentication while `manage.py` is absent.
+Cloud Run-managed application secrets. The release workflow now runs Django
+checks and tests before cloud authentication; it cannot deploy until the named
+Google Cloud and GitHub production configuration exists.
 
 ## Troubleshooting
 
 - **Docker connection refused or permission denied:** start Docker Desktop, then rerun the command.
-- **Port conflicts:** this foundation does not publish PostgreSQL to the host. A future application port will be configurable when its entrypoint exists.
+- **Port conflicts:** set `APP_PORT` in `.env` to choose a different web port.
+  PostgreSQL is not published to the host.
 - **Lockfile differs in CI:** regenerate it with the exact container command above and commit both dependency files.
-- **Cloud Run release is blocked:** create the Django project first, then configure Google Cloud Workload Identity Federation and the named GitHub production variables/secrets.
+- **Cloud Run release is blocked:** configure Google Cloud Workload Identity
+  Federation and the named GitHub production variables/secrets.

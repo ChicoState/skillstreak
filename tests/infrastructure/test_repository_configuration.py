@@ -25,3 +25,11 @@ def test_required_infrastructure_files_are_present() -> None:
     )
 
     assert all((ROOT / path).is_file() for path in required_files)
+
+
+def test_compose_exposes_the_web_service_without_exposing_postgresql() -> None:
+    configuration = (ROOT / "compose.yml").read_text()
+
+    assert '      - "${APP_PORT:-8000}:8000"' in configuration
+    assert "internal: true" not in configuration
+    assert '      - "5432:5432"' not in configuration
