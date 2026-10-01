@@ -13,6 +13,8 @@ services:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-replace-with-a-local-development-only-value}
       DJANGO_SETTINGS_MODULE: skillstreak.settings.local
+      DEMO_LOGIN_EMAIL: ${DEMO_LOGIN_EMAIL:-}
+      DEMO_LOGIN_PASSWORD: ${DEMO_LOGIN_PASSWORD:-}
     networks: [application]
     ports:
       - "${APP_PORT:-8000}:8000"
