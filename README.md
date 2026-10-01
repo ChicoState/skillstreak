@@ -2,9 +2,9 @@
 
 SkillStreak is planned as a public, multi-account Django web application with
 PostgreSQL. This repository currently contains its development, quality, Docker,
-delivery foundation, plus a minimal Django source framework and liveness route.
-No database schema, product apps, product routes, or production deployment
-exists yet.
+delivery foundation, a minimal Django source framework, liveness route, and a
+local fixed-demo dashboard sign-in at `/`. No database-backed product schema,
+real account system, API, or production deployment exists yet.
 
 ## Repository map
 
@@ -17,7 +17,8 @@ exists yet.
 | `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
 | `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, `manage.py` | Django project framework and liveness endpoint | Ready; product apps not created |
+| `src/`, `manage.py` | Django project framework, liveness endpoint, and fixed-demo dashboard | Ready; no database-backed product behavior |
+| `docs/specs/dashboard-visual-prototype.md` | Approved fixed-demo MVP scope | Current |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 
 ## Getting Started
@@ -44,8 +45,11 @@ exists yet.
    ```
 
    The application listens on `http://localhost:8000` by default. Set
-   `APP_PORT` in `.env` to choose another host port. Verify its liveness endpoint
-   from another terminal:
+   `APP_PORT` in `.env` to choose another host port. The root page provides a
+   fixed-demo sign-in. Set `DEMO_LOGIN_EMAIL` and `DEMO_LOGIN_PASSWORD` in your
+   untracked `.env` file before starting it; only that pair can access the
+   sample dashboard. This temporary sign-in is for local MVP validation, not
+   production accounts. Verify its liveness endpoint from another terminal:
 
    ```sh
    curl --fail http://localhost:8000/healthz
