@@ -3,8 +3,8 @@
 SkillStreak is planned as a public, multi-account Django web application with
 PostgreSQL. This repository currently contains its development, quality, Docker,
 delivery foundation, a minimal Django source framework, liveness route, and a
-local fixed-demo dashboard sign-in at `/`. No database-backed product schema,
-real account system, API, or production deployment exists yet.
+local two-account skill tracker at `/`. It includes PostgreSQL-backed skill
+selection and binary daily completions; it is not a production account system.
 
 ## Repository map
 
@@ -17,8 +17,9 @@ real account system, API, or production deployment exists yet.
 | `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
 | `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, `manage.py` | Django project framework, liveness endpoint, and fixed-demo dashboard | Ready; no database-backed product behavior |
-| `docs/specs/dashboard-visual-prototype.md` | Approved fixed-demo MVP scope | Current |
+| `src/`, `manage.py` | Django project, demo account commands, and selected-skill dashboard | Ready for local MVP use |
+| `src/tracking/` | Tracking schema, PostgreSQL migrations, and skill seed command | Ready for local MVP use |
+| `docs/specs/selectable-binary-skill-tracking.md` | Selected binary-skill MVP scope | Current |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 
 ## Getting Started
@@ -44,12 +45,20 @@ real account system, API, or production deployment exists yet.
    docker compose up --build
    ```
 
+   Prepare the local schema and demo accounts in a second terminal:
+
+   ```sh
+   docker compose exec web python manage.py migrate
+   docker compose exec web python manage.py seed_system_skills
+   docker compose exec web python manage.py provision_demo_users
+   ```
+
    The application listens on `http://localhost:8000` by default. Set
-   `APP_PORT` in `.env` to choose another host port. The root page provides a
-   fixed-demo sign-in. Set `DEMO_LOGIN_EMAIL` and `DEMO_LOGIN_PASSWORD` in your
-   untracked `.env` file before starting it; only that pair can access the
-   sample dashboard. This temporary sign-in is for local MVP validation, not
-   production accounts. Verify its liveness endpoint from another terminal:
+   `APP_PORT` in `.env` to choose another host port. Configure both email and
+   password pairs in the untracked `.env` file, then sign in with either one.
+   Each demo account begins with Touch Grass selected and has independent
+   history. This is for local MVP validation, not production accounts. Verify
+   its liveness endpoint from another terminal:
 
    ```sh
    curl --fail http://localhost:8000/healthz
@@ -83,7 +92,8 @@ endpoint; it does not query PostgreSQL. Cloud Run must supply
 `DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DATABASE_URL`,
 `DJANGO_SECRET_KEY`, and `ALLOWED_HOSTS` through managed configuration and
 secrets. Full Django checks and coverage enforcement now run in pull requests;
-migrations and browser workflows remain future product work.
+migrations are now included for the local tracker; browser workflows remain
+future product work.
 
 ## Quality and CI
 

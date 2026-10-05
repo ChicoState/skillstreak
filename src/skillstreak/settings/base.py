@@ -9,7 +9,9 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parents[3]
 
 INSTALLED_APPS = [
+    "accounts.apps.AccountsConfig",
     "dashboard.apps.DashboardConfig",
+    "tracking.apps.TrackingConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -55,15 +57,18 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-DEMO_LOGIN_EMAIL = os.getenv("DEMO_LOGIN_EMAIL", "")
-DEMO_LOGIN_PASSWORD = os.getenv("DEMO_LOGIN_PASSWORD", "")
+DEMO_ACCOUNT_1_EMAIL = os.getenv("DEMO_ACCOUNT_1_EMAIL", "")
+DEMO_ACCOUNT_1_PASSWORD = os.getenv("DEMO_ACCOUNT_1_PASSWORD", "")
+DEMO_ACCOUNT_2_EMAIL = os.getenv("DEMO_ACCOUNT_2_EMAIL", "")
+DEMO_ACCOUNT_2_PASSWORD = os.getenv("DEMO_ACCOUNT_2_PASSWORD", "")
 
-# The MVP has no account table. A signed cookie safely stores the small,
-# non-sensitive demo-session marker without introducing database persistence.
+# The local MVP uses Django-authenticated accounts while keeping session state
+# in signed cookies instead of adding a server-side session table.
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
+LOGIN_URL = "dashboard-preview"
 
 
 def database_configuration(database_url: str) -> dict[str, dict[str, str | int]]:

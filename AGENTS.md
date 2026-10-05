@@ -6,9 +6,9 @@ This repository is at the infrastructure-foundation stage. Read
 `infrastructure_plan.md` before changing tooling, Docker, CI, dependency, or
 delivery decisions. The currently implemented configuration follows that plan:
 Python 3.14, Django 5.2 LTS, pip-tools, local PostgreSQL in Compose, and planned
-Google Cloud Run delivery through Artifact Registry. The first product slice is
-a local, fixed-demo sign-in and visual dashboard; database-backed product
-behavior does not exist yet.
+Google Cloud Run delivery through Artifact Registry. The implemented product
+slice is a local two-account sign-in and PostgreSQL-backed selected-skill
+tracker; production account behavior does not exist yet.
 
 ## Repository map
 
@@ -19,13 +19,12 @@ behavior does not exist yet.
 - `tests/infrastructure/`: configuration harness tests only.
 - `.github/workflows/`: `pr-checks.yml` and guarded `release.yml`.
 - `.agents/skills/`: repository-provided skills.
-- `src/dashboard/`: Django fixed-demo sign-in and dashboard; it has no product
-  data persistence.
-- `docs/specs/dashboard-visual-prototype.md`: approved MVP sign-in scope.
-- `docs/decisions/001-fixed-demo-sign-in.md`: rationale for the temporary
-  sign-in design.
-- Database-backed product apps, API endpoints, migration files, real accounts,
-  and browser tests: **not created yet**.
+- `src/dashboard/`: Django login and selected-skill dashboard.
+- `src/accounts/`: local two-user provisioning command.
+- `src/tracking/`: tracking schema, migrations, seeding command, selection,
+  and binary daily-completion behavior.
+- `docs/specs/selectable-binary-skill-tracking.md`: approved MVP scope.
+- Browser tests and production account flows: **not created yet**.
 
 ## Required reading and skill routing
 
