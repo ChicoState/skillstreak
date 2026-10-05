@@ -13,7 +13,9 @@ user-owned skill/progress behavior does not exist yet.
 ## Repository map
 
 - `infrastructure_plan.md`: approved infrastructure plan.
-- `requirements.in`, `requirements.txt`, `pyproject.toml`, `.python-version`: Python toolchain and lockfile.
+- `requirements.in`, `requirements.txt`, `requirements.runtime.in`,
+  `requirements.runtime.txt`, `pyproject.toml`, `.python-version`: Python
+  toolchain and development/runtime lockfiles.
 - `compose.yml`, `Dockerfile`, `.dockerignore`, `.env.example`: Docker infrastructure and safe local configuration template.
 - `scripts/`: infrastructure validation, container-image, and PostgreSQL smoke tests.
 - `tests/infrastructure/`: configuration harness tests only.

@@ -33,11 +33,12 @@ yet.
 
    Never commit `.env`. Cloud Run receives real `DATABASE_URL` and
    `DJANGO_SECRET_KEY` values from Google Cloud-managed secrets.
-3. Regenerate the dependency lockfile after editing `requirements.in`:
+3. Regenerate the dependency lockfiles after editing `requirements.in` or the
+   production-only `requirements.runtime.in`:
 
    ```sh
    docker run --rm --volume "$PWD:/workspace" --workdir /workspace python:3.14.7-slim-bookworm \
-     sh -c 'python -m pip install "pip-tools>=7.5,<8" && python -m piptools compile --strip-extras --output-file requirements.txt requirements.in'
+     sh -c 'python -m pip install "pip-tools>=7.5,<8" && python -m piptools compile --strip-extras --output-file requirements.txt requirements.in && python -m piptools compile --strip-extras --output-file requirements.runtime.txt requirements.runtime.in'
    ```
 4. Start the local Django and PostgreSQL services:
 
@@ -92,8 +93,8 @@ migrations and browser workflows remain future product work.
 
 ## Quality and CI
 
-`requirements.txt` is the committed pip-tools lockfile. Pull requests verify the
-lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
+`requirements.txt` and `requirements.runtime.txt` are committed pip-tools
+lockfiles. Pull requests verify the development lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
 CodeQL, and an image build with a critical-vulnerability scan. Django system
 checks and the 80% branch-and-line coverage gate now run in pull requests.
 Browser tests remain future product work.

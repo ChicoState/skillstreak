@@ -22,6 +22,8 @@ def test_required_infrastructure_files_are_present() -> None:
         "compose.yml",
         "requirements.in",
         "requirements.txt",
+        "requirements.runtime.in",
+        "requirements.runtime.txt",
     )
 
     assert all((ROOT / path).is_file() for path in required_files)
@@ -45,3 +47,12 @@ def test_pull_request_quality_job_has_a_postgresql_service_for_django() -> None:
         in workflow
     )
     assert "DJANGO_SETTINGS_MODULE: skillstreak.settings.production" in workflow
+
+
+def test_runtime_image_excludes_development_dependencies_and_refreshes_os_packages() -> None:
+    dockerfile = (ROOT / "Dockerfile").read_text()
+
+    assert "COPY requirements.runtime.txt ./" in dockerfile
+    assert "COPY requirements.txt ./" not in dockerfile
+    assert "apt-get upgrade --yes" in dockerfile
+    assert "libpq5" in dockerfile
