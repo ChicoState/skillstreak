@@ -17,7 +17,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/usr/local/bin:$PATH
 WORKDIR /app
 
-RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
+RUN apt-get update \
+    && apt-get upgrade --yes \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home app
 COPY --from=builder /install /usr/local
 COPY --chown=app:app . .
 RUN chown app:app /app
