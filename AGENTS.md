@@ -2,13 +2,13 @@
 
 ## Status and source of truth
 
-This repository is at the infrastructure-foundation stage. Read
+This repository is at the first-account-slice stage. Read
 `infrastructure_plan.md` before changing tooling, Docker, CI, dependency, or
 delivery decisions. The currently implemented configuration follows that plan:
 Python 3.14, Django 5.2 LTS, pip-tools, local PostgreSQL in Compose, and planned
 Google Cloud Run delivery through Artifact Registry. The first product slice is
-a local, fixed-demo sign-in and visual dashboard; database-backed product
-behavior does not exist yet.
+internal `@csuchico.edu` account registration and a visual dashboard;
+user-owned skill/progress behavior does not exist yet.
 
 ## Repository map
 
@@ -19,13 +19,14 @@ behavior does not exist yet.
 - `tests/infrastructure/`: configuration harness tests only.
 - `.github/workflows/`: `pr-checks.yml` and guarded `release.yml`.
 - `.agents/skills/`: repository-provided skills.
-- `src/dashboard/`: Django fixed-demo sign-in and dashboard; it has no product
-  data persistence.
-- `docs/specs/dashboard-visual-prototype.md`: approved MVP sign-in scope.
-- `docs/decisions/001-fixed-demo-sign-in.md`: rationale for the temporary
-  sign-in design.
-- Database-backed product apps, API endpoints, migration files, real accounts,
-  and browser tests: **not created yet**.
+- `src/accounts/`: email-only internal team accounts and first user migration.
+- `src/dashboard/`: authenticated static dashboard; it has no user-owned
+  product data persistence.
+- `docs/specs/internal-team-accounts.md`: approved account scope.
+- `docs/decisions/002-internal-email-accounts.md`: account-authentication
+  rationale.
+- Database-backed skills/progress apps, API endpoints, and browser tests:
+  **not created yet**.
 
 ## Required reading and skill routing
 
@@ -42,9 +43,9 @@ apply.
 
 ## Boundaries
 
-- During infrastructure work, do not create Django apps, pages, routes, models,
-  domain schemas, authentication flows, business logic, product fixtures, or
-  production data.
+- During infrastructure work, do not create unrelated Django apps, pages,
+  routes, models, domain schemas, authentication flows, business logic, product
+  fixtures, or production data.
 - Do not change a plan decision without updating `infrastructure_plan.md` through
   the planning workflow.
 - Never commit secrets, `.env` files, credentials, generated reports, local

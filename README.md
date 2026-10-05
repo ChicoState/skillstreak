@@ -1,10 +1,11 @@
 # SkillStreak
 
-SkillStreak is planned as a public, multi-account Django web application with
-PostgreSQL. This repository currently contains its development, quality, Docker,
-delivery foundation, a minimal Django source framework, liveness route, and a
-local fixed-demo dashboard sign-in at `/`. No database-backed product schema,
-real account system, API, or production deployment exists yet.
+SkillStreak is planned as a multi-account Django web application with PostgreSQL.
+This repository currently contains its development, quality, Docker, delivery
+foundation, a minimal Django source framework, liveness route, internal
+`@csuchico.edu` account registration/sign-in, and a static sample dashboard at
+`/`. No user-owned skill/progress schema, API, or production deployment exists
+yet.
 
 ## Repository map
 
@@ -17,8 +18,8 @@ real account system, API, or production deployment exists yet.
 | `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
 | `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, `manage.py` | Django project framework, liveness endpoint, and fixed-demo dashboard | Ready; no database-backed product behavior |
-| `docs/specs/dashboard-visual-prototype.md` | Approved fixed-demo MVP scope | Current |
+| `src/`, `manage.py` | Django framework, liveness endpoint, team accounts, and sample dashboard | Ready; no user-owned product behavior |
+| `docs/specs/internal-team-accounts.md` | Approved internal-account scope | Current |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 
 ## Getting Started
@@ -45,11 +46,15 @@ real account system, API, or production deployment exists yet.
    ```
 
    The application listens on `http://localhost:8000` by default. Set
-   `APP_PORT` in `.env` to choose another host port. The root page provides a
-   fixed-demo sign-in. Set `DEMO_LOGIN_EMAIL` and `DEMO_LOGIN_PASSWORD` in your
-   untracked `.env` file before starting it; only that pair can access the
-   sample dashboard. This temporary sign-in is for local MVP validation, not
-   production accounts. Verify its liveness endpoint from another terminal:
+   `APP_PORT` in `.env` to choose another host port. Run migrations before
+   registering an internal `@csuchico.edu` account and accessing the sample
+   dashboard:
+
+   ```sh
+   docker compose exec web python manage.py migrate
+   ```
+
+   Verify its liveness endpoint from another terminal:
 
    ```sh
    curl --fail http://localhost:8000/healthz

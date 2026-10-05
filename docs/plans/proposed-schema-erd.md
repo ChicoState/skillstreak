@@ -11,11 +11,11 @@ metrics at all, one daily metric, or several repeated measurements.
 
 ```mermaid
 erDiagram
-    AUTH_USER ||--o| USER_PREFERENCE : has
-    AUTH_USER ||--o{ SKILL : creates
+    ACCOUNTS_USER ||--o| USER_PREFERENCE : has
+    ACCOUNTS_USER ||--o{ SKILL : creates
     SKILL o|--o{ SKILL : categorizes
     SKILL ||--o{ METRIC_DEFINITION : declares
-    AUTH_USER ||--o{ USER_SKILL : tracks
+    ACCOUNTS_USER ||--o{ USER_SKILL : tracks
     SKILL ||--o{ USER_SKILL : is_selected_for
     USER_SKILL ||--o{ DAILY_COMPLETION : has
     USER_SKILL ||--o{ USER_SKILL_SCHEDULE : configures
@@ -24,9 +24,9 @@ erDiagram
     DAILY_COMPLETION ||--o{ METRIC_MEASUREMENT : contains
     METRIC_DEFINITION ||--o{ METRIC_MEASUREMENT : describes
 
-    AUTH_USER {
+    ACCOUNTS_USER {
         bigint id PK
-        string username
+        string email UK
     }
 
     USER_PREFERENCE {
@@ -111,11 +111,12 @@ erDiagram
 
 ## Entities and rules
 
-### `AUTH_USER`
+### `ACCOUNTS_USER`
 
-The Django-configured user model. Django models must refer to it through
-`settings.AUTH_USER_MODEL`, never by a hard-coded table name. The entity is
-shown here only to make ownership clear.
+The email-only Django-configured user model. Its normalized `@csuchico.edu`
+email address is unique and is the authentication identifier. Django models
+must refer to it through `settings.AUTH_USER_MODEL`, never by a hard-coded
+table name. The entity is shown here only to make ownership clear.
 
 ### `USER_PREFERENCE`
 

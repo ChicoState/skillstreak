@@ -1,0 +1,1 @@
+"""Internal team account application."""
