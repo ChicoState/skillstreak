@@ -33,3 +33,15 @@ def test_compose_exposes_the_web_service_without_exposing_postgresql() -> None:
     assert '      - "${APP_PORT:-8000}:8000"' in configuration
     assert "internal: true" not in configuration
     assert '      - "5432:5432"' not in configuration
+
+
+def test_pull_request_quality_job_has_a_postgresql_service_for_django() -> None:
+    workflow = (ROOT / ".github/workflows/pr-checks.yml").read_text()
+
+    assert "name: Python quality and infrastructure harness" in workflow
+    assert "postgres:17.7-bookworm" in workflow
+    assert (
+        "DATABASE_URL: postgresql://skillstreak:ci-test-password@localhost:5432/skillstreak"
+        in workflow
+    )
+    assert "DJANGO_SETTINGS_MODULE: skillstreak.settings.production" in workflow

@@ -10,6 +10,22 @@ jobs:
   quality:
     name: Python quality and infrastructure harness
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17.7-bookworm
+        env:
+          POSTGRES_DB: skillstreak
+          POSTGRES_USER: skillstreak
+          POSTGRES_PASSWORD: ci-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U skillstreak -d skillstreak"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://skillstreak:ci-test-password@localhost:5432/skillstreak
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -29,6 +45,10 @@ jobs:
         run: pytest tests/infrastructure
       - name: Django checks when application bootstrap exists
         if: ${{ hashFiles('manage.py') != '' }}
+        env:
+          DJANGO_SETTINGS_MODULE: skillstreak.settings.production
+          DJANGO_SECRET_KEY: ci-only-deployment-check-signing-value-not-used-outside-continuous-integration-2026
+          ALLOWED_HOSTS: localhost
         run: python manage.py check --deploy
       - name: Django tests and coverage when application bootstrap exists
         if: ${{ hashFiles('manage.py') != '' }}
