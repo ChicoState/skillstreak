@@ -9,6 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parents[3]
 
 INSTALLED_APPS = [
+    "accounts.apps.AccountsConfig",
     "dashboard.apps.DashboardConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -55,15 +56,19 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-DEMO_LOGIN_EMAIL = os.getenv("DEMO_LOGIN_EMAIL", "")
-DEMO_LOGIN_PASSWORD = os.getenv("DEMO_LOGIN_PASSWORD", "")
-
-# The MVP has no account table. A signed cookie safely stores the small,
-# non-sensitive demo-session marker without introducing database persistence.
-SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "account-sign-in"
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 
 
 def database_configuration(database_url: str) -> dict[str, dict[str, str | int]]:

@@ -1,0 +1,37 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create an account | SkillStreak</title>
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+  </head>
+  <body>
+    <main class="preview">
+      <section class="login-panel" aria-labelledby="register-title">
+        <div class="brand-mark" aria-hidden="true">S</div>
+        <p class="eyebrow">For the SkillStreak project team</p>
+        <h1 id="register-title">Create your account</h1>
+        <p class="login-copy">Use your @csuchico.edu email address to join.</p>
+        {% if form.non_field_errors %}
+          <div class="form-error" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <form class="preview-form" method="post">
+          {% csrf_token %}
+          <label for="{{ form.email.id_for_label }}">Email</label>
+          {{ form.email }}
+          {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          <label for="{{ form.password1.id_for_label }}">Password</label>
+          {{ form.password1 }}
+          {% for error in form.password1.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+          {{ form.password2 }}
+          {% for error in form.password2.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          <button class="primary-button" type="submit">Create account <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="prototype-note">Already have an account? <a href="{% url 'account-sign-in' %}">Sign in</a>.</p>
+      </section>
+    </main>
+  </body>
+</html>

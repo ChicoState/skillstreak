@@ -9,7 +9,6 @@
   </head>
   <body>
     <main class="preview">
-      {% if authenticated %}
       <section class="dashboard" aria-labelledby="dashboard-title">
         <aside class="sidebar" aria-label="Primary navigation">
           <a class="brand" href="#skills" aria-label="SkillStreak dashboard">
@@ -26,11 +25,11 @@
           <header class="dashboard-header">
             <div>
               <p class="eyebrow">Tuesday, March 18</p>
-              <h1 id="dashboard-title">Good morning, Alex.</h1>
+              <h1 id="dashboard-title">Good morning, {{ request.user.email }}.</h1>
             </div>
-            <div class="profile" aria-label="Demo profile">
-              <span>DS</span><span>Demo session</span>
-              <form method="post" action="{% url 'dashboard-sign-out' %}">
+            <div class="profile" aria-label="Signed-in profile">
+              <span aria-hidden="true">SS</span><span>{{ request.user.email }}</span>
+              <form method="post" action="{% url 'account-sign-out' %}">
                 {% csrf_token %}
                 <button class="logout-button" type="submit">Log out</button>
               </form>
@@ -100,24 +99,6 @@
           </section>
         </div>
       </section>
-      {% else %}
-      <section class="login-panel" aria-labelledby="login-title">
-        <div class="brand-mark" aria-hidden="true">S</div>
-        <p class="eyebrow">A calmer way to build consistency</p>
-        <h1 id="login-title">Welcome to SkillStreak</h1>
-        <p class="login-copy">Sign in to view the MVP dashboard and its sample streak history.</p>
-        {% if login_failed %}<p class="form-error" role="alert">The email or password is incorrect.</p>{% endif %}
-        <form class="preview-form" method="post" action="{% url 'dashboard-sign-in' %}">
-          {% csrf_token %}
-          <label for="demo-email">Email</label>
-          <input id="demo-email" name="email" type="email" autocomplete="off" required placeholder="you@example.com">
-          <label for="demo-password">Password</label>
-          <input id="demo-password" name="password" type="password" autocomplete="off" required placeholder="••••••••">
-          <button class="primary-button" type="submit">Sign in <span aria-hidden="true">→</span></button>
-        </form>
-        <p class="prototype-note">This MVP uses one administrator-configured demo sign-in.</p>
-      </section>
-      {% endif %}
     </main>
   </body>
 </html>
