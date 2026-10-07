@@ -1,5 +1,8 @@
 # Implementation Plan: Dashboard Visual Prototype
 
+> Historical — authentication portions superseded by
+> [Internal Team Accounts](../specs/internal-team-accounts.md).
+
 ## Overview
 
 Replace the client-only dashboard preview with an approved, fixed-demo

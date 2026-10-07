@@ -2,28 +2,34 @@
 
 ## Status and source of truth
 
-This repository is at the infrastructure-foundation stage. Read
+This repository is at the first-account-slice stage. Read
 `infrastructure_plan.md` before changing tooling, Docker, CI, dependency, or
 delivery decisions. The currently implemented configuration follows that plan:
 Python 3.14, Django 5.2 LTS, pip-tools, local PostgreSQL in Compose, and planned
 Google Cloud Run delivery through Artifact Registry. The implemented product
-slice is a local two-account sign-in and PostgreSQL-backed selected-skill
-tracker; production account behavior does not exist yet.
+slice combines internal `@csuchico.edu` account registration with a
+PostgreSQL-backed selected-skill tracker; production account behavior does not
+exist yet.
 
 ## Repository map
 
 - `infrastructure_plan.md`: approved infrastructure plan.
-- `requirements.in`, `requirements.txt`, `pyproject.toml`, `.python-version`: Python toolchain and lockfile.
+- `requirements.in`, `requirements.txt`, `requirements.runtime.in`,
+  `requirements.runtime.txt`, `pyproject.toml`, `.python-version`: Python
+  toolchain and development/runtime lockfiles.
 - `compose.yml`, `Dockerfile`, `.dockerignore`, `.env.example`: Docker infrastructure and safe local configuration template.
 - `scripts/`: infrastructure validation, container-image, and PostgreSQL smoke tests.
 - `tests/infrastructure/`: configuration harness tests only.
 - `.github/workflows/`: `pr-checks.yml` and guarded `release.yml`.
 - `.agents/skills/`: repository-provided skills.
-- `src/dashboard/`: Django login and selected-skill dashboard.
-- `src/accounts/`: local two-user provisioning command.
-- `src/tracking/`: tracking schema, migrations, seeding command, selection,
-  and binary daily-completion behavior.
-- `docs/specs/selectable-binary-skill-tracking.md`: approved MVP scope.
+- `src/accounts/`: email-only internal team accounts and first user migration.
+- `src/dashboard/`: authenticated selected-skill dashboard.
+- `src/tracking/`: tracking schema, migrations, seeding, selection, and binary
+  daily-completion behavior.
+- `docs/specs/internal-team-accounts.md`: approved account scope.
+- `docs/decisions/002-internal-email-accounts.md`: account-authentication
+  rationale.
+- `docs/specs/selectable-binary-skill-tracking.md`: selected-skill scope.
 - Browser tests and production account flows: **not created yet**.
 
 ## Required reading and skill routing
@@ -41,9 +47,9 @@ apply.
 
 ## Boundaries
 
-- During infrastructure work, do not create Django apps, pages, routes, models,
-  domain schemas, authentication flows, business logic, product fixtures, or
-  production data.
+- During infrastructure work, do not create unrelated Django apps, pages,
+  routes, models, domain schemas, authentication flows, business logic, product
+  fixtures, or production data.
 - Do not change a plan decision without updating `infrastructure_plan.md` through
   the planning workflow.
 - Never commit secrets, `.env` files, credentials, generated reports, local

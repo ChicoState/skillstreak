@@ -1,20 +1,18 @@
-"""Authenticated selected-skill dashboard."""
+"""Selected-skill dashboard for authenticated team members."""
 
 from datetime import timedelta
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
 
 from tracking.models import DailyCompletion, Skill, UserSkill
 
 
+@login_required
 def preview(request: HttpRequest) -> HttpResponse:
-    """Render sign-in or the current user's active skills and weekly history."""
-    if not request.user.is_authenticated:
-        return render(request, "dashboard/preview.html")
+    """Render the current member's active skills and current-week history."""
     today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())
     active_skills = list(
@@ -54,22 +52,3 @@ def preview(request: HttpRequest) -> HttpResponse:
             "active_skill_ids": {item.skill_id for item in active_skills},
         },
     )
-
-
-@require_POST
-def sign_in(request: HttpRequest) -> HttpResponse:
-    """Authenticate one of the provisioned local demo users."""
-    user = authenticate(
-        request, username=request.POST.get("email", ""), password=request.POST.get("password", "")
-    )
-    if user is not None:
-        login(request, user)
-        return redirect("dashboard-preview")
-    return render(request, "dashboard/preview.html", {"login_failed": True})
-
-
-@require_POST
-def sign_out(request: HttpRequest) -> HttpResponse:
-    """End the authenticated session."""
-    logout(request)
-    return redirect("dashboard-preview")

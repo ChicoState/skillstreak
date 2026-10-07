@@ -13,9 +13,9 @@ selectable system skills and a yes/no daily action for each one.
 ## Decision
 
 Represent every schema entity through Django models and migrations. Seed all
-system skills from `initial_data.sql`, start demo accounts with Touch Grass
-selected, and expose only binary selection/completion workflows. The richer
-metric and schedule models remain without user-facing controls.
+system skills from `initial_data.sql`, let registered internal users choose
+their own skills, and expose only binary selection/completion workflows. The
+richer metric and schedule models remain without user-facing controls.
 
 ## Alternatives considered
 

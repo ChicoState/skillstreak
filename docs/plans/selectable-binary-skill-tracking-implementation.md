@@ -14,7 +14,7 @@ Django tracking models + PostgreSQL migrations
              |
              +---------------------------+
              v                           v
-system-skill seed command       two-user provision command
+system-skill seed command       internal account registration
              |                           |
              +-------------+-------------+
                            v
@@ -24,13 +24,14 @@ system-skill seed command       two-user provision command
            dashboard weekly tracker and browser verification
 ```
 
-## Task 1: Replace temporary demo auth with two Django accounts
+## Task 1: Register internal Django accounts
 
-**Acceptance:** Two `.env`-configured demo users are created idempotently with
-Django-hashed passwords; sign-in identifies `request.user` and logout clears
-the Django session.
+**Acceptance:** `@csuchico.edu` users can self-register with Django-hashed
+passwords; sign-in identifies `request.user` and logout clears the Django
+session.
 
-**Verify:** Authentication tests cover both accounts and invalid credentials.
+**Verify:** Authentication tests cover registration, sign-in, sign-out, and
+invalid credentials.
 
 **Files:** `src/accounts/`, `src/dashboard/`, `.env.example`, `compose.yml`,
 tests, and documentation.
@@ -47,22 +48,20 @@ verify the daily-completion uniqueness and schedule-overlap constraints.
 **Files:** `src/tracking/models.py`, `src/tracking/migrations/`, settings,
 and model tests.
 
-## Task 3: Seed system skills and default Touch Grass selection
+## Task 3: Seed system skills
 
 **Acceptance:** An idempotent command creates all nine `SYSTEM` skills from
-`initial_data.sql`; provisioning makes only Touch Grass active for each demo
-user without duplicate user-skill rows.
+`initial_data.sql`; registered users choose their own active skills without
+duplicate user-skill rows.
 
-**Verify:** Run seed/provision commands twice and assert unchanged counts and
-default selections.
+**Verify:** Run the seed command twice and assert unchanged counts.
 
-**Files:** `src/tracking/management/commands/`, `src/accounts/management/`,
-and command tests.
+**Files:** `src/tracking/management/commands/` and command tests.
 
 ## Checkpoint: Durable catalog and account ownership
 
 - [ ] Migrations work against local PostgreSQL.
-- [ ] Both demo users own separate Touch Grass selections.
+- [ ] Registered users own separate skill selections.
 - [ ] All nine system skills exist once.
 - [ ] Full tests, coverage, Ruff, and Django checks pass.
 

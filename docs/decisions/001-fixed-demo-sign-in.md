@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-09-30
+Superseded by [ADR-002](002-internal-email-accounts.md) — 2026-10-05
 
 ## Context
 

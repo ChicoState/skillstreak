@@ -1,10 +1,10 @@
 # SkillStreak
 
-SkillStreak is planned as a public, multi-account Django web application with
-PostgreSQL. This repository currently contains its development, quality, Docker,
-delivery foundation, a minimal Django source framework, liveness route, and a
-local two-account skill tracker at `/`. It includes PostgreSQL-backed skill
-selection and binary daily completions; it is not a production account system.
+SkillStreak is planned as a multi-account Django web application with PostgreSQL.
+This repository currently contains its development, quality, Docker, delivery
+foundation, a minimal Django source framework, liveness route, internal
+`@csuchico.edu` account registration/sign-in, and a PostgreSQL-backed selected
+skill dashboard at `/`. It is not a production account system.
 
 ## Repository map
 
@@ -17,9 +17,10 @@ selection and binary daily completions; it is not a production account system.
 | `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
 | `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, `manage.py` | Django project, demo account commands, and selected-skill dashboard | Ready for local MVP use |
+| `src/`, `manage.py` | Django project, team accounts, and selected-skill dashboard | Ready for local MVP use |
 | `src/tracking/` | Tracking schema, PostgreSQL migrations, and skill seed command | Ready for local MVP use |
 | `docs/specs/selectable-binary-skill-tracking.md` | Selected binary-skill MVP scope | Current |
+| `docs/specs/internal-team-accounts.md` | Approved internal-account scope | Current |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 
 ## Getting Started
@@ -33,11 +34,12 @@ selection and binary daily completions; it is not a production account system.
 
    Never commit `.env`. Cloud Run receives real `DATABASE_URL` and
    `DJANGO_SECRET_KEY` values from Google Cloud-managed secrets.
-3. Regenerate the dependency lockfile after editing `requirements.in`:
+3. Regenerate the dependency lockfiles after editing `requirements.in` or the
+   production-only `requirements.runtime.in`:
 
    ```sh
    docker run --rm --volume "$PWD:/workspace" --workdir /workspace python:3.14.7-slim-bookworm \
-     sh -c 'python -m pip install "pip-tools>=7.5,<8" && python -m piptools compile --strip-extras --output-file requirements.txt requirements.in'
+     sh -c 'python -m pip install "pip-tools>=7.5,<8" && python -m piptools compile --strip-extras --output-file requirements.txt requirements.in && python -m piptools compile --strip-extras --output-file requirements.runtime.txt requirements.runtime.in'
    ```
 4. Start the local Django and PostgreSQL services:
 
@@ -45,20 +47,19 @@ selection and binary daily completions; it is not a production account system.
    docker compose up --build
    ```
 
-   Prepare the local schema and demo accounts in a second terminal:
+   Prepare the local schema and skill catalog in a second terminal:
 
    ```sh
    docker compose exec web python manage.py migrate
    docker compose exec web python manage.py seed_system_skills
-   docker compose exec web python manage.py provision_demo_users
    ```
 
    The application listens on `http://localhost:8000` by default. Set
-   `APP_PORT` in `.env` to choose another host port. Configure both email and
-   password pairs in the untracked `.env` file, then sign in with either one.
-   Each demo account begins with Touch Grass selected and has independent
-   history. This is for local MVP validation, not production accounts. Verify
-   its liveness endpoint from another terminal:
+   `APP_PORT` in `.env` to choose another host port. Run migrations before
+   registering an internal `@csuchico.edu` account and accessing the sample
+   dashboard. Each member can select skills from the library; selections and
+   completions belong to that signed-in account. Verify its liveness endpoint
+   from another terminal:
 
    ```sh
    curl --fail http://localhost:8000/healthz
@@ -97,8 +98,8 @@ future product work.
 
 ## Quality and CI
 
-`requirements.txt` is the committed pip-tools lockfile. Pull requests verify the
-lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
+`requirements.txt` and `requirements.runtime.txt` are committed pip-tools
+lockfiles. Pull requests verify the development lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
 CodeQL, and an image build with a critical-vulnerability scan. Django system
 checks and the 80% branch-and-line coverage gate now run in pull requests.
 Browser tests remain future product work.

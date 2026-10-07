@@ -47,7 +47,7 @@ jobs:
         if: ${{ hashFiles('manage.py') != '' }}
         env:
           DJANGO_SETTINGS_MODULE: skillstreak.settings.production
-          DJANGO_SECRET_KEY: ci-only-not-a-production-secret
+          DJANGO_SECRET_KEY: ci-only-deployment-check-signing-value-not-used-outside-continuous-integration-2026
           ALLOWED_HOSTS: localhost
         run: python manage.py check --deploy
       - name: Django tests and coverage when application bootstrap exists

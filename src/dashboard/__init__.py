@@ -1,1 +1,1 @@
-"""Fixed-demo sign-in and dashboard application."""
+"""Authenticated static dashboard application."""

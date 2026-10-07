@@ -6,14 +6,11 @@ Implemented — local MVP scope.
 
 ## Objective
 
-Replace the dashboard's filler skills with a durable, per-account tracker. The
-two local demo users can select any skill supplied by `initial_data.sql`; the
-dashboard displays only their active selections. Each displayed skill has one
-binary action: the user did it today, or they did not.
-
-The system starts each newly provisioned demo account with **Touch Grass**
-selected. This makes the first-run dashboard useful while preserving the
-user's ability to select any of the remaining system skills.
+Replace the dashboard's filler skills with a durable, per-account tracker.
+Each registered `@csuchico.edu` user can select any skill supplied by
+`initial_data.sql`; the dashboard displays only that user's active selections.
+Each displayed skill has one binary action: the user did it today, or they did
+not.
 
 ## Data Contract
 
@@ -39,11 +36,10 @@ future work but receive no creation or editing controls in this slice.
 
 ## Scope
 
-- Provision two local Django users from untracked environment credentials and
-  authenticate with Django's standard login/session facilities.
+- Register and authenticate internal `@csuchico.edu` users with Django's
+  standard login/session facilities.
 - Seed all nine system skills from `initial_data.sql` idempotently through a
   Django management command.
-- Seed Touch Grass as the sole active selection for each demo user.
 - Present a dashboard skill library that lets an authenticated user select or
   deselect any system skill using CSRF-protected POST actions.
 - Render only the current user's active selections on the dashboard.
@@ -55,15 +51,15 @@ future work but receive no creation or editing controls in this slice.
 ## Out of Scope
 
 - Friends, sharing, rankings, messages, notifications, public skills, custom
-  skills, account registration, password reset, and production provisioning.
+  skills, password reset, and production provisioning.
 - Entering metric values, defining schedules, editing prior completions,
   changing a user's timezone, or a stored streak/leaderboard score.
 - Making an inactive selection visible in the dashboard tracker.
 
 ## Decisions
 
-- The default skill is `touch-grass`; a user may activate or deactivate it
-  like any other system skill.
+- New users begin with no selections and may activate or deactivate any system
+  skill, including Touch Grass.
 - A deselection sets `UserSkill.is_active=False` rather than deleting history.
 - A user may toggle only the authenticated user's active `UserSkill` for the
   current UTC date. Forms contain no owner or date inputs.
@@ -78,7 +74,6 @@ future work but receive no creation or editing controls in this slice.
 docker compose up -d db
 docker compose run --rm web python manage.py migrate
 docker compose run --rm web python manage.py seed_system_skills
-docker compose run --rm web python manage.py provision_demo_users
 docker compose up web
 docker compose exec web pytest --cov --cov-branch --cov-fail-under=80 --cov-report=term-missing
 docker compose exec web ruff format --check .
@@ -89,7 +84,7 @@ docker compose exec web ruff check .
 
 ```text
 src/
-  accounts/                 # Two local demo-user provisioning
+  accounts/                 # Internal user registration and sign-in
   tracking/                 # Schema models, migrations, system-skill seeding
   dashboard/                # Login, selection library, weekly tracker UI
 tests/application/          # Model, command, authorization, and view tests
@@ -114,8 +109,7 @@ user_skill = get_object_or_404(
 
 - PostgreSQL-backed migration/model tests cover the SQL-equivalent uniqueness,
   check, and exclusion constraints.
-- Seeding tests verify all nine system skills are idempotent and Touch Grass is
-  the default active selection for both demo users.
+- Seeding tests verify all nine system skills are idempotent.
 - View tests cover selection, deselection, binary completion toggling,
   unauthenticated requests, CSRF, and cross-account isolation.
 - A browser workflow signs in, selects a second skill, marks it complete,
@@ -133,9 +127,7 @@ user_skill = get_object_or_404(
 
 ## Success Criteria
 
-- All nine seeded skills are available to either demo account.
-- Touch Grass is the only default active selection for a newly provisioned
-  demo account.
+- All nine seeded skills are available to every registered internal user.
 - The dashboard shows exactly the signed-in user's active selections.
 - A selected skill's today state and weekly count survive refreshes.
 - One account cannot select, deselect, view, or complete another account's
