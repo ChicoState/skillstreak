@@ -1,1 +1,1 @@
-"""Local demo-account provisioning."""
+"""Internal team account application."""

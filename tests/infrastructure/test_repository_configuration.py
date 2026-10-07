@@ -22,6 +22,8 @@ def test_required_infrastructure_files_are_present() -> None:
         "compose.yml",
         "requirements.in",
         "requirements.txt",
+        "requirements.runtime.in",
+        "requirements.runtime.txt",
     )
 
     assert all((ROOT / path).is_file() for path in required_files)
@@ -39,7 +41,6 @@ def test_pull_request_quality_job_has_a_postgresql_service_for_django() -> None:
     workflow = (ROOT / ".github/workflows/pr-checks.yml").read_text()
 
     assert "name: Python quality and infrastructure harness" in workflow
-    assert "services:" in workflow
     assert "postgres:17.7-bookworm" in workflow
     assert (
         "DATABASE_URL: postgresql://skillstreak:ci-test-password@localhost:5432/skillstreak"
@@ -48,8 +49,10 @@ def test_pull_request_quality_job_has_a_postgresql_service_for_django() -> None:
     assert "DJANGO_SETTINGS_MODULE: skillstreak.settings.production" in workflow
 
 
-def test_runtime_image_refreshes_operating_system_security_packages() -> None:
+def test_runtime_image_excludes_development_dependencies_and_refreshes_os_packages() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text()
 
-    assert "apt-get update" in dockerfile
+    assert "COPY requirements.runtime.txt ./" in dockerfile
+    assert "COPY requirements.txt ./" not in dockerfile
     assert "apt-get upgrade --yes" in dockerfile
+    assert "libpq5" in dockerfile

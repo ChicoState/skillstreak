@@ -57,18 +57,20 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-DEMO_ACCOUNT_1_EMAIL = os.getenv("DEMO_ACCOUNT_1_EMAIL", "")
-DEMO_ACCOUNT_1_PASSWORD = os.getenv("DEMO_ACCOUNT_1_PASSWORD", "")
-DEMO_ACCOUNT_2_EMAIL = os.getenv("DEMO_ACCOUNT_2_EMAIL", "")
-DEMO_ACCOUNT_2_PASSWORD = os.getenv("DEMO_ACCOUNT_2_PASSWORD", "")
-
-# The local MVP uses Django-authenticated accounts while keeping session state
-# in signed cookies instead of adding a server-side session table.
-SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "account-sign-in"
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
 LOGIN_URL = "dashboard-preview"
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 
 
 def database_configuration(database_url: str) -> dict[str, dict[str, str | int]]:

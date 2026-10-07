@@ -6,8 +6,8 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /build
 
-COPY requirements.txt ./
-RUN python -m pip install --prefix=/install --requirement requirements.txt
+COPY requirements.runtime.txt ./
+RUN python -m pip install --prefix=/install --requirement requirements.runtime.txt
 
 FROM python:3.14.7-slim-bookworm AS runtime
 
@@ -19,6 +19,7 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get upgrade --yes \
+    && apt-get install --yes --no-install-recommends libpq5 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 app \
     && useradd --uid 10001 --gid app --create-home app

@@ -64,10 +64,13 @@ h3 { margin-bottom: .18rem; font-size: 1.1rem; }
 
 .login-copy, .prototype-note { color: var(--muted); line-height: 1.6; }
 .prototype-note { font-size: .875rem; text-align: center; }
+.prototype-note a { color: var(--moss-dark); font-weight: 750; }
 .form-error { border-left: .25rem solid #ae3c3c; background: #f9e3e1; margin: 1.5rem 0 0; padding: .75rem; color: #762a2a; font-size: .875rem; }
 
 .preview-form { display: grid; gap: .55rem; margin-top: 2rem; }
 .preview-form label { margin-top: .75rem; font-size: .875rem; font-weight: 700; }
+.preview-form .errorlist { margin: 0; padding-left: 1rem; color: #762a2a; font-size: .8rem; }
+.field-error { margin: 0; color: #762a2a; font-size: .8rem; }
 
 .preview-form input {
   width: 100%;
