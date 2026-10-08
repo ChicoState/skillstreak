@@ -1,5 +1,5 @@
 # Production application dependencies only. Development and browser tooling stay
 # in requirements.in so they are not copied into the runtime image.
-Django==5.2.17
+Django==6.1.1
 gunicorn==26.2.0
 psycopg==3.3.6
