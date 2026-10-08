@@ -6,9 +6,10 @@ This repository is at the first-account-slice stage. Read
 `infrastructure_plan.md` before changing tooling, Docker, CI, dependency, or
 delivery decisions. The currently implemented configuration follows that plan:
 Python 3.14, Django 5.2 LTS, pip-tools, local PostgreSQL in Compose, and planned
-Google Cloud Run delivery through Artifact Registry. The first product slice is
-internal `@csuchico.edu` account registration and a visual dashboard;
-user-owned skill/progress behavior does not exist yet.
+Google Cloud Run delivery through Artifact Registry. The implemented product
+slice combines internal `@csuchico.edu` account registration with a
+PostgreSQL-backed selected-skill tracker; production account behavior does not
+exist yet.
 
 ## Repository map
 
@@ -22,13 +23,14 @@ user-owned skill/progress behavior does not exist yet.
 - `.github/workflows/`: `pr-checks.yml` and guarded `release.yml`.
 - `.agents/skills/`: repository-provided skills.
 - `src/accounts/`: email-only internal team accounts and first user migration.
-- `src/dashboard/`: authenticated static dashboard; it has no user-owned
-  product data persistence.
+- `src/dashboard/`: authenticated selected-skill dashboard.
+- `src/tracking/`: tracking schema, migrations, seeding, selection, and binary
+  daily-completion behavior.
 - `docs/specs/internal-team-accounts.md`: approved account scope.
 - `docs/decisions/002-internal-email-accounts.md`: account-authentication
   rationale.
-- Database-backed skills/progress apps, API endpoints, and browser tests:
-  **not created yet**.
+- `docs/specs/selectable-binary-skill-tracking.md`: selected-skill scope.
+- Browser tests and production account flows: **not created yet**.
 
 ## Required reading and skill routing
 

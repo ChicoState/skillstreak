@@ -41,6 +41,7 @@ def test_pull_request_quality_job_has_a_postgresql_service_for_django() -> None:
     workflow = (ROOT / ".github/workflows/pr-checks.yml").read_text()
 
     assert "name: Python quality and infrastructure harness" in workflow
+    assert "services:" in workflow
     assert "postgres:17.7-bookworm" in workflow
     assert (
         "DATABASE_URL: postgresql://skillstreak:ci-test-password@localhost:5432/skillstreak"
