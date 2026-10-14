@@ -103,5 +103,5 @@ def test_dashboard_profile_menu_links_to_profile_settings(client) -> None:
     response = client.get(reverse("dashboard-preview"))
 
     assert response.status_code == 200
-    profile_link = f'{reverse("profile-settings")}?next={reverse("dashboard-preview")}'
+    profile_link = f"{reverse('profile-settings')}?next={reverse('dashboard-preview')}"
     assert profile_link in response.content.decode()
