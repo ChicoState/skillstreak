@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "dashboard.apps.DashboardConfig",
+    "profiles.apps.ProfilesConfig",
     "tracking.apps.TrackingConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",

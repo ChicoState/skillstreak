@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Profile &amp; settings · SkillStreak</title>
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+  </head>
+  <body>
+    <main class="preview">
+      <section class="login-panel" aria-labelledby="profile-settings-title">
+        <a class="brand" href="{% url 'dashboard-preview' %}"><span class="brand-mark" aria-hidden="true">S</span><span>SkillStreak</span></a>
+        <p class="eyebrow">Profile</p>
+        <h1 id="profile-settings-title">Profile &amp; settings</h1>
+        <p class="login-copy">Signed in as <strong>{{ user.email }}</strong>.</p>
+        <form class="preview-form" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ return_url }}">
+          <label for="{{ form.timezone.id_for_label }}">Timezone</label>
+          {{ form.timezone }}
+          {% for error in form.timezone.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          <label class="checkbox-field" for="{{ form.reminders_enabled.id_for_label }}">{{ form.reminders_enabled }}<span>Enable reminders</span></label>
+          <p class="field-help">Reminder delivery is not available yet. This saves your preference for a future update.</p>
+          <button class="primary-button" type="submit">Save settings</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
