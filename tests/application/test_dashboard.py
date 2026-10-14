@@ -86,6 +86,22 @@ def test_only_active_system_skills_can_be_selected(client, user) -> None:
     assert not UserSkill.objects.exists()
 
 
+@pytest.mark.django_db
+def test_skill_library_can_filter_active_system_skills_by_name(client, user) -> None:
+    matching_skill = Skill.objects.create(
+        slug="read-fiction", name="Read Fiction", visibility=Skill.Visibility.SYSTEM
+    )
+    Skill.objects.create(slug="exercise", name="Exercise", visibility=Skill.Visibility.SYSTEM)
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard-preview"), {"q": "fiction"})
+
+    assert response.status_code == 200
+    assert matching_skill.name in response.content.decode()
+    assert "Exercise" not in response.content.decode()
+    assert 'value="fiction"' in response.content.decode()
+
+
 def test_skill_actions_reject_requests_without_a_csrf_token() -> None:
     response = Client(enforce_csrf_checks=True).post(reverse("toggle-selection", args=[1]))
     assert response.status_code == 403

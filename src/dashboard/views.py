@@ -56,15 +56,18 @@ def preview(request: HttpRequest) -> HttpResponse:
                 ),
             }
         )
-    library = Skill.objects.filter(visibility=Skill.Visibility.SYSTEM, is_active=True).order_by(
-        "name"
-    )
+    library_query = request.GET.get("q", "").strip()
+    library = Skill.objects.filter(visibility=Skill.Visibility.SYSTEM, is_active=True)
+    if library_query:
+        library = library.filter(name__icontains=library_query)
+    library = library.order_by("name")
     return render(
         request,
         "dashboard/preview.html",
         {
             "cards": cards,
             "library": library,
+            "library_query": library_query,
             "today": today,
             "active_skill_ids": {item.skill_id for item in active_skills},
         },

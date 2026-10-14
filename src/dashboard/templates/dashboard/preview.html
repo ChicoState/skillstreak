@@ -48,11 +48,19 @@
           </section>
           <section class="library-section" aria-labelledby="library-title">
             <div class="section-heading"><div><p class="eyebrow">Build your routine</p><h2 id="library-title">Skill library</h2></div></div>
+            <form class="library-search" method="get" role="search">
+              <label for="library-query">Find a skill</label>
+              <input id="library-query" name="q" type="search" value="{{ library_query }}" placeholder="Search skills">
+              <button class="library-search-button" type="submit">Search</button>
+            </form>
+            {% if library_query %}<p class="library-result-summary">Showing skills matching “{{ library_query }}”. <a href="{% url 'dashboard-preview' %}">Clear search</a></p>{% endif %}
+            {% if library %}
             <div class="library-grid">
               {% for skill in library %}
               <article class="library-card"><div><h3>{{ skill.name }}</h3><p>{{ skill.description }}</p></div><form method="post" action="{% url 'toggle-selection' skill.id %}">{% csrf_token %}<button class="library-button{% if skill.id in active_skill_ids %} selected{% endif %}" type="submit">{% if skill.id in active_skill_ids %}Remove{% else %}Add skill{% endif %}</button></form></article>
               {% endfor %}
             </div>
+            {% else %}<p class="empty-state">No skills match your search.</p>{% endif %}
           </section>
         </div>
       </section>

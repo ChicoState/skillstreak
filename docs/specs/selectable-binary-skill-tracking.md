@@ -7,16 +7,16 @@ Implemented — local MVP scope.
 ## Objective
 
 Replace the dashboard's filler skills with a durable, per-account tracker.
-Each registered `@csuchico.edu` user can select any skill supplied by
-`initial_data.sql`; the dashboard displays only that user's active selections.
+Each registered `@csuchico.edu` user can select any skill in the system
+catalog; the dashboard displays only that user's active selections.
 Each displayed skill has one binary action: the user did it today, or they did
 not.
 
 ## Data Contract
 
-`schema.sql` is the approved relational design and `initial_data.sql` is the
-approved system-skill catalog. Django models and migrations, not direct SQL
-execution, are the runtime implementation source of truth.
+`schema.sql` is the approved relational design. Django models, migrations, and
+the system-skill management command, not direct SQL execution, are the runtime
+implementation source of truth.
 
 All schema entities will be represented in Django:
 
@@ -38,10 +38,12 @@ future work but receive no creation or editing controls in this slice.
 
 - Register and authenticate internal `@csuchico.edu` users with Django's
   standard login/session facilities.
-- Seed all nine system skills from `initial_data.sql` idempotently through a
-  Django management command.
+- Seed the 109-skill system catalog idempotently through a Django management
+  command. The catalog retains its original nine skills and adds 100 distinct,
+  general-audience daily skills.
 - Present a dashboard skill library that lets an authenticated user select or
-  deselect any system skill using CSRF-protected POST actions.
+  deselect any system skill using CSRF-protected POST actions and narrow the
+  library by name with an accessible GET search form.
 - Render only the current user's active selections on the dashboard.
 - Toggle today's binary completion for an active selection. A completion row
   means done; its absence means not done.
@@ -58,8 +60,8 @@ future work but receive no creation or editing controls in this slice.
 
 ## Decisions
 
-- New users begin with no selections and may activate or deactivate any system
-  skill, including Touch Grass.
+- New users begin with Touch Grass selected and may activate or deactivate any
+  system skill, including Touch Grass.
 - A deselection sets `UserSkill.is_active=False` rather than deleting history.
 - A user may toggle only the authenticated user's active `UserSkill` for the
   current UTC date. Forms contain no owner or date inputs.
@@ -113,25 +115,26 @@ user_skill = get_object_or_404(
 
 - PostgreSQL-backed migration/model tests cover the SQL-equivalent uniqueness,
   check, and exclusion constraints.
-- Seeding tests verify all nine system skills are idempotent.
+- Seeding tests verify the 109-skill catalog is idempotent, contains unique
+  slugs, and retains the original skills.
 - View tests cover selection, deselection, binary completion toggling,
   unauthenticated requests, CSRF, and cross-account isolation.
-- A browser workflow signs in, selects a second skill, marks it complete,
-  refreshes, and confirms the other account cannot see that state.
+- A browser workflow signs in, searches for a skill, selects it, marks it
+  complete, and confirms the completion remains after refresh.
 
 ## Boundaries
 
 - Always: use Django migrations, Django password hashing, POST + CSRF for
   state changes, and `request.user` for all ownership checks.
-- Ask first: add a system skill, expose metrics or schedules, alter a schema
-  constraint, add a third account, or implement friend access.
+- Ask first: expose metrics or schedules, alter a schema constraint, add a
+  third account, or implement friend access.
 - Never: run `schema.sql` against an application database, commit credentials,
   accept user/date/selection ownership from a form, or expose inactive skills
   as active dashboard trackers.
 
 ## Success Criteria
 
-- All nine seeded skills are available to every registered internal user.
+- All 109 seeded skills are available to every registered internal user.
 - The dashboard shows exactly the signed-in user's active selections.
 - A selected skill's today state and weekly count survive refreshes.
 - One account cannot select, deselect, view, or complete another account's

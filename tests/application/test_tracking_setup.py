@@ -14,8 +14,11 @@ def test_system_skill_seed_is_idempotent() -> None:
     call_command("seed_system_skills")
     call_command("seed_system_skills")
 
-    assert Skill.objects.count() == 9
-    assert set(Skill.objects.values_list("slug", flat=True)) == {
+    slugs = set(Skill.objects.values_list("slug", flat=True))
+
+    assert Skill.objects.count() == 109
+    assert len(slugs) == 109
+    assert {
         "drink-water",
         "eat-healthy",
         "exercise",
@@ -25,7 +28,19 @@ def test_system_skill_seed_is_idempotent() -> None:
         "read",
         "sleep",
         "touch-grass",
-    }
+    }.issubset(slugs)
+    assert {
+        "make-your-bed",
+        "practice-a-language",
+        "budget-check-in",
+        "practice-yoga",
+        "declutter-one-area",
+        "make-progress-toward-a-health-goal",
+    }.issubset(slugs)
+    assert all(
+        skill.visibility == Skill.Visibility.SYSTEM and skill.is_active and skill.description
+        for skill in Skill.objects.all()
+    )
 
 
 @pytest.mark.django_db(transaction=True)

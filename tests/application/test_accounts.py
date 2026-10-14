@@ -7,6 +7,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client
 
+from tracking.models import Skill, UserSkill
+
 
 @pytest.mark.django_db
 def test_csuchico_team_member_can_register_and_reach_the_dashboard(client) -> None:
@@ -23,6 +25,26 @@ def test_csuchico_team_member_can_register_and_reach_the_dashboard(client) -> No
     assert response.url == "/"
     assert get_user_model().objects.filter(email="learner@csuchico.edu").exists()
     assert "Your skills" in client.get("/").content.decode()
+
+
+@pytest.mark.django_db
+def test_registration_selects_touch_grass_by_default(client) -> None:
+    response = client.post(
+        "/register",
+        {
+            "email": "learner@csuchico.edu",
+            "password1": "Secure skillstreak password 2026!",
+            "password2": "Secure skillstreak password 2026!",
+        },
+    )
+
+    user = get_user_model().objects.get(email="learner@csuchico.edu")
+    selection = UserSkill.objects.get(user=user)
+
+    assert response.status_code == 302
+    assert selection.skill.slug == "touch-grass"
+    assert selection.skill.visibility == Skill.Visibility.SYSTEM
+    assert selection.is_active
 
 
 @pytest.mark.django_db

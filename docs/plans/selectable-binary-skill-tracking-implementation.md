@@ -2,12 +2,13 @@
 
 ## Status
 
-Implemented — verified locally with Django tests and PostgreSQL.
+Implemented — verified locally with Django, PostgreSQL, and Chromium browser
+tests.
 
 ## Dependency Graph
 
 ```text
-schema.sql + initial_data.sql design
+schema.sql design + system-skill catalog
              |
              v
 Django tracking models + PostgreSQL migrations
@@ -50,9 +51,9 @@ and model tests.
 
 ## Task 3: Seed system skills
 
-**Acceptance:** An idempotent command creates all nine `SYSTEM` skills from
-`initial_data.sql`; registered users choose their own active skills without
-duplicate user-skill rows.
+**Acceptance:** An idempotent command creates the 109 `SYSTEM` skills in the
+catalog; registered users choose their own active skills without duplicate
+user-skill rows.
 
 **Verify:** Run the seed command twice and assert unchanged counts.
 
@@ -60,10 +61,10 @@ duplicate user-skill rows.
 
 ## Checkpoint: Durable catalog and account ownership
 
-- [ ] Migrations work against local PostgreSQL.
-- [ ] Registered users own separate skill selections.
-- [ ] All nine system skills exist once.
-- [ ] Full tests, coverage, Ruff, and Django checks pass.
+- [x] Migrations work against local PostgreSQL.
+- [x] Registered users own separate skill selections.
+- [x] All 109 system skills exist once.
+- [x] Full tests, coverage, Ruff, and Django checks pass.
 
 ## Task 4: Add protected selection and binary-completion actions
 
@@ -79,20 +80,20 @@ selection rejection, and cross-account authorization.
 ## Task 5: Render the selected-skill dashboard
 
 **Acceptance:** The homepage lists only active selections, offers the complete
-skill library, and shows current UTC weekly history plus a binary today control
-for every displayed skill.
+skill library with an accessible name search, and shows current UTC weekly
+history plus a binary today control for every displayed skill.
 
-**Verify:** Dashboard tests and browser path: sign in → select a skill → mark
-today → refresh → log out → sign in as the other user.
+**Verify:** Dashboard and browser tests: sign in → search for a skill → select
+it → mark today → refresh.
 
 **Files:** `src/dashboard/`, dashboard tests, and browser tests.
 
 ## Completion Checkpoint
 
-- [ ] Selection and completion data persists per account.
-- [ ] The dashboard never displays inactive or other-user selections.
-- [ ] All state changes are accessible, CSRF-protected POST forms.
-- [ ] Required tests, coverage, image smoke, and browser workflow pass.
+- [x] Selection and completion data persists per account.
+- [x] The dashboard never displays inactive or other-user selections.
+- [x] All state changes are accessible, CSRF-protected POST forms.
+- [x] Required tests, coverage, image smoke, and browser workflow pass.
 
 ## Risks and Mitigations
 

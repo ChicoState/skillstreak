@@ -222,6 +222,12 @@ nav { display: flex; gap: .4rem; margin-top: 1.25rem; overflow-x: auto; }
 .calendar .today { outline: 2px solid var(--sun); outline-offset: -2px; background: #fff6e5; color: var(--ink); }
 
 .library-section { margin-top: 2.5rem; }
+.library-search { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: .75rem; }
+.library-search label { width: 100%; font-size: .875rem; font-weight: 700; }
+.library-search input { min-width: 0; flex: 1 1 14rem; border: 1px solid var(--line); border-radius: .6rem; background: var(--surface); padding: .65rem .85rem; color: var(--ink); }
+.library-search-button { border: 1px solid var(--moss); border-radius: .6rem; background: var(--moss); color: white; cursor: pointer; font-size: .875rem; font-weight: 750; padding: .65rem .85rem; }
+.library-result-summary { margin: 0 0 1rem; color: var(--muted); font-size: .875rem; }
+.library-result-summary a { color: var(--moss-dark); font-weight: 750; }
 .library-grid { display: grid; gap: .75rem; }
 .library-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid var(--line); border-radius: .75rem; background: var(--surface); padding: 1rem; }
 .library-card h3 { margin: 0 0 .25rem; }

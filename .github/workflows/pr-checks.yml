@@ -50,6 +50,9 @@ jobs:
           DJANGO_SECRET_KEY: ci-only-deployment-check-signing-value-not-used-outside-continuous-integration-2026
           ALLOWED_HOSTS: localhost
         run: python manage.py check --deploy
+      - name: Install Chromium for browser tests
+        if: ${{ hashFiles('manage.py') != '' }}
+        run: python -m playwright install --with-deps chromium
       - name: Django tests and coverage when application bootstrap exists
         if: ${{ hashFiles('manage.py') != '' }}
         run: pytest --cov --cov-branch --cov-fail-under=80 --cov-report=term-missing --cov-report=xml

@@ -9,6 +9,24 @@ WORKDIR /build
 COPY requirements.runtime.txt ./
 RUN python -m pip install --prefix=/install --requirement requirements.runtime.txt
 
+FROM python:3.14.7-slim-bookworm AS development
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN python -m pip install --requirement requirements.txt \
+    && python -m playwright install --with-deps chromium \
+    && groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home app
+COPY --chown=app:app . .
+USER app
+
 FROM python:3.14.7-slim-bookworm AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
