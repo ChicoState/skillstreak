@@ -3,6 +3,9 @@
 from django import forms
 from django.contrib.auth import authenticate, password_validation
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+
+from tracking.models import Skill, UserSkill
 
 from .models import User, is_team_email, normalize_email
 
@@ -50,9 +53,23 @@ class RegistrationForm(forms.Form):
 
     def save(self) -> User:
         """Create the validated account with Django-managed password hashing."""
-        return User.objects.create_user(
+        user = User.objects.create_user(
             email=self.cleaned_data["email"], password=self.cleaned_data["password1"]
         )
+        touch_grass, _ = Skill.objects.get_or_create(
+            slug="touch-grass",
+            defaults={
+                "name": "Touch Grass",
+                "description": "Spend time outdoors.",
+                "visibility": Skill.Visibility.SYSTEM,
+            },
+        )
+        UserSkill.objects.get_or_create(
+            user=user,
+            skill=touch_grass,
+            defaults={"started_on": timezone.localdate()},
+        )
+        return user
 
 
 class SignInForm(forms.Form):

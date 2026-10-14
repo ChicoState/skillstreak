@@ -14,7 +14,7 @@ skill dashboard at `/`. It is not a production account system.
 | `requirements.in`, `requirements.txt`, `pyproject.toml` | Python dependencies, resolved lockfile, and tool configuration | Ready |
 | `compose.yml`, `Dockerfile`, `.dockerignore` | Local Django/PostgreSQL stack and hardened runtime image | Ready |
 | `scripts/` | Infrastructure validation and disposable Docker smoke tests | Ready |
-| `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
+| `tests/application/`, `tests/browser/`, `tests/infrastructure/` | Django, Chromium browser, and infrastructure tests | Ready |
 | `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
 | `src/`, `manage.py` | Django project, team accounts, and selected-skill dashboard | Ready for local MVP use |
@@ -65,7 +65,8 @@ skill dashboard at `/`. It is not a production account system.
    curl --fail http://localhost:8000/healthz
    ```
 
-   Run Django commands inside the Docker-only development service:
+   Run Django commands inside the dedicated Docker development target (which
+   includes pytest, Ruff, and Chromium):
 
    ```sh
    docker compose exec web python manage.py check
@@ -93,16 +94,15 @@ endpoint; it does not query PostgreSQL. Cloud Run must supply
 `DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DATABASE_URL`,
 `DJANGO_SECRET_KEY`, and `ALLOWED_HOSTS` through managed configuration and
 secrets. Full Django checks and coverage enforcement now run in pull requests;
-migrations are now included for the local tracker; browser workflows remain
-future product work.
+migrations and Chromium browser workflows are included for the local tracker.
 
 ## Quality and CI
 
 `requirements.txt` and `requirements.runtime.txt` are committed pip-tools
 lockfiles. Pull requests verify the development lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
 CodeQL, and an image build with a critical-vulnerability scan. Django system
-checks and the 80% branch-and-line coverage gate now run in pull requests.
-Browser tests remain future product work.
+checks, the 80% branch-and-line coverage gate, and the focused Chromium
+browser workflow now run in pull requests.
 
 Release tags (`v*`) target Google Cloud Run through Artifact Registry. Before a
 release can run, create the Google Cloud project resources and GitHub production

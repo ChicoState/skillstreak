@@ -48,9 +48,9 @@
 
 | Test layer | Tool or library | Planned scope | Planned execution point |
 |---|---|---|---|
-| Unit | pytest and pytest-django | Models, forms, permissions, and business rules | Local and pull requests |
-| Integration | pytest-django with PostgreSQL | Views, authentication, ORM queries, and migrations | Local and pull requests |
-| End-to-end or UI | Playwright | Critical public, sign-in, and collaboration workflows | Pull requests when practical; release validation |
+| Unit | pytest and pytest-django | Models, forms, permissions, and business rules | Dedicated Docker development target locally and pull requests |
+| Integration | pytest-django with PostgreSQL | Views, authentication, ORM queries, and migrations | Dedicated Docker development target locally and pull requests |
+| End-to-end or UI | Playwright | Critical public, sign-in, and collaboration workflows | Dedicated Docker development target locally when practical; pull requests and release validation |
 
 ## 6. Test Analysis
 
@@ -91,8 +91,8 @@ These are developer-workstation prerequisites that will not be supplied by the p
 
 - **Planned Docker role:** Development and production.
 - **Future files that would be created during implementation:** `pyproject.toml`, `requirements.in`, `requirements.txt`, `Dockerfile`, `compose.yml`, `.dockerignore`, and an example environment-variable template.
-- **Planned images and services:** Django application image and PostgreSQL service locally; the production database remains managed rather than containerized.
-- **Development container behavior:** Compose runs the application and PostgreSQL together with application source bind-mounted for iteration.
+- **Planned images and services:** One multi-stage Dockerfile produces a production runtime image and a dedicated development target; Compose runs the development target and PostgreSQL locally, while the production database remains managed rather than containerized.
+- **Development container behavior:** The development target installs the full locked development dependency set, including pytest, Ruff, and Playwright, and Compose runs it with application source bind-mounted for iteration. The production target installs only runtime dependencies.
 - **Ports:** Bind the Django development service to a configurable local port; expose PostgreSQL only to the Compose network unless direct host access is needed.
 - **Bind mounts and named volumes:** Source bind mount for development; named PostgreSQL volume for local persistence; no production source mount.
 - **Environment-variable and secret handling:** Local uncommitted environment file; production secrets injected by the managed host; never bake secrets into images.
