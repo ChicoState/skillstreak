@@ -9,6 +9,7 @@ from django.db.models import Q
 class UserPreference(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     timezone = models.CharField(max_length=63, default="UTC")
+    reminders_enabled = models.BooleanField(default=False)
 
     class Meta:
         db_table = "user_preferences"
