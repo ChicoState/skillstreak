@@ -21,10 +21,14 @@
               <p class="eyebrow">{{ today|date:"l, F j" }}</p>
               <h1 id="dashboard-title">Welcome back, {{ user.email }}.</h1>
             </div>
-            <div class="profile" aria-label="Signed-in profile">
-              <span aria-hidden="true">{{ user.email|slice:":1"|upper }}</span><span>{{ user.email }}</span>
-              <form method="post" action="{% url 'account-sign-out' %}">{% csrf_token %}<button class="logout-button" type="submit">Log out</button></form>
-            </div>
+            <details class="profile-menu">
+              <summary class="profile"><span aria-hidden="true">{{ user.email|slice:":1"|upper }}</span><span>{{ user.email }}</span></summary>
+              <div class="profile-menu-panel">
+                {% url 'dashboard-preview' as dashboard_url %}
+                <a href="{% url 'profile-settings' %}?next={{ dashboard_url|urlencode }}">Profile &amp; settings</a>
+                <form method="post" action="{% url 'account-sign-out' %}">{% csrf_token %}<button class="logout-button" type="submit">Log out</button></form>
+              </div>
+            </details>
           </header>
           <section class="overview" aria-labelledby="overview-title"><div><p class="eyebrow">Today’s focus</p><h2 id="overview-title">Small steps, strong momentum.</h2></div><p class="overview-progress"><strong>{{ cards|length }}</strong> active skill{{ cards|length|pluralize }}</p></section>
           <section id="skills" class="skills-section" aria-labelledby="skills-title">
