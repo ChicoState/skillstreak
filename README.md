@@ -18,8 +18,9 @@ skill dashboard at `/`. It is not a production account system.
 | `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
 | `src/`, `manage.py` | Django project, team accounts, and selected-skill dashboard | Ready for local MVP use |
-| `src/tracking/` | Tracking schema, PostgreSQL migrations, and skill seed command | Ready for local MVP use |
+| `src/tracking/` | Tracking schema, PostgreSQL migrations, system-skill seeding, and private custom-skill goals | Ready for local MVP use |
 | `docs/specs/selectable-binary-skill-tracking.md` | Selected binary-skill MVP scope | Current |
+| `docs/specs/private-custom-skill-goals.md` | Private daily, weekly, and monthly custom-skill goal scope | Current |
 | `docs/specs/internal-team-accounts.md` | Approved internal-account scope | Current |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 

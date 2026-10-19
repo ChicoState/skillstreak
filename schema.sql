@@ -103,6 +103,7 @@ CREATE TABLE user_skill_schedules (
     effective_through date,
     interval_days smallint,
     target_days_per_week smallint,
+    target_days_per_month smallint,
     week_starts_on smallint,
     short_month_policy varchar(16),
 
@@ -112,26 +113,37 @@ CREATE TABLE user_skill_schedules (
         (rule_type = 'DAILY'
             AND interval_days IS NULL
             AND target_days_per_week IS NULL
+            AND target_days_per_month IS NULL
             AND week_starts_on IS NULL
             AND short_month_policy IS NULL)
         OR (rule_type = 'EVERY_N_DAYS'
             AND interval_days >= 2
             AND target_days_per_week IS NULL
+            AND target_days_per_month IS NULL
             AND week_starts_on IS NULL
             AND short_month_policy IS NULL)
         OR (rule_type = 'DAYS_PER_WEEK'
             AND interval_days IS NULL
             AND target_days_per_week BETWEEN 1 AND 7
+            AND target_days_per_month IS NULL
             AND week_starts_on BETWEEN 1 AND 7
+            AND short_month_policy IS NULL)
+        OR (rule_type = 'DAYS_PER_MONTH'
+            AND interval_days IS NULL
+            AND target_days_per_week IS NULL
+            AND target_days_per_month BETWEEN 1 AND 31
+            AND week_starts_on IS NULL
             AND short_month_policy IS NULL)
         OR (rule_type = 'DAYS_OF_WEEK'
             AND interval_days IS NULL
             AND target_days_per_week IS NULL
+            AND target_days_per_month IS NULL
             AND week_starts_on IS NULL
             AND short_month_policy IS NULL)
         OR (rule_type = 'DAYS_OF_MONTH'
             AND interval_days IS NULL
             AND target_days_per_week IS NULL
+            AND target_days_per_month IS NULL
             AND week_starts_on IS NULL
             AND short_month_policy IN ('SKIP', 'LAST_DAY'))
     ),

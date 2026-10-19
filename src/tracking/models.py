@@ -126,6 +126,7 @@ class UserSkillSchedule(models.Model):
         DAILY = "DAILY"
         EVERY_N_DAYS = "EVERY_N_DAYS"
         DAYS_PER_WEEK = "DAYS_PER_WEEK"
+        DAYS_PER_MONTH = "DAYS_PER_MONTH"
         DAYS_OF_WEEK = "DAYS_OF_WEEK"
         DAYS_OF_MONTH = "DAYS_OF_MONTH"
 
@@ -135,6 +136,7 @@ class UserSkillSchedule(models.Model):
     effective_through = models.DateField(null=True, blank=True)
     interval_days = models.SmallIntegerField(null=True, blank=True)
     target_days_per_week = models.SmallIntegerField(null=True, blank=True)
+    target_days_per_month = models.SmallIntegerField(null=True, blank=True)
     week_starts_on = models.SmallIntegerField(null=True, blank=True)
     short_month_policy = models.CharField(max_length=16, null=True, blank=True)
 
@@ -152,6 +154,7 @@ class UserSkillSchedule(models.Model):
                         rule_type="DAILY",
                         interval_days__isnull=True,
                         target_days_per_week__isnull=True,
+                        target_days_per_month__isnull=True,
                         week_starts_on__isnull=True,
                         short_month_policy__isnull=True,
                     )
@@ -159,6 +162,7 @@ class UserSkillSchedule(models.Model):
                         rule_type="EVERY_N_DAYS",
                         interval_days__gte=2,
                         target_days_per_week__isnull=True,
+                        target_days_per_month__isnull=True,
                         week_starts_on__isnull=True,
                         short_month_policy__isnull=True,
                     )
@@ -167,14 +171,25 @@ class UserSkillSchedule(models.Model):
                         interval_days__isnull=True,
                         target_days_per_week__gte=1,
                         target_days_per_week__lte=7,
+                        target_days_per_month__isnull=True,
                         week_starts_on__gte=1,
                         week_starts_on__lte=7,
+                        short_month_policy__isnull=True,
+                    )
+                    | Q(
+                        rule_type="DAYS_PER_MONTH",
+                        interval_days__isnull=True,
+                        target_days_per_week__isnull=True,
+                        target_days_per_month__gte=1,
+                        target_days_per_month__lte=31,
+                        week_starts_on__isnull=True,
                         short_month_policy__isnull=True,
                     )
                     | Q(
                         rule_type="DAYS_OF_WEEK",
                         interval_days__isnull=True,
                         target_days_per_week__isnull=True,
+                        target_days_per_month__isnull=True,
                         week_starts_on__isnull=True,
                         short_month_policy__isnull=True,
                     )
@@ -182,6 +197,7 @@ class UserSkillSchedule(models.Model):
                         rule_type="DAYS_OF_MONTH",
                         interval_days__isnull=True,
                         target_days_per_week__isnull=True,
+                        target_days_per_month__isnull=True,
                         week_starts_on__isnull=True,
                         short_month_policy__in=["SKIP", "LAST_DAY"],
                     )
