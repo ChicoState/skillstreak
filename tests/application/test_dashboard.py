@@ -50,6 +50,10 @@ def test_registered_member_can_select_and_complete_a_system_skill(
     dashboard = client.get(reverse("dashboard-preview")).content.decode()
     assert user.email in dashboard
     assert "Touch Grass" in dashboard
+    assert "Spend time outdoors." in dashboard
+    assert '<span class="detail-label">Progress</span>' in dashboard
+    assert "1 day completed this week" in dashboard
+    assert "This week" not in dashboard
     assert "Completed today — undo" in dashboard
 
 
@@ -85,3 +89,32 @@ def test_only_active_system_skills_can_be_selected(client, user) -> None:
 def test_skill_actions_reject_requests_without_a_csrf_token() -> None:
     response = Client(enforce_csrf_checks=True).post(reverse("toggle-selection", args=[1]))
     assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_dashboard_cards_do_not_expose_a_weekly_completed_value(client, user, system_skill) -> None:
+    UserSkill.objects.create(user=user, skill=system_skill, started_on=timezone.localdate())
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard-preview"))
+
+    assert "weekly_completed" not in response.context["cards"][0]
+    assert response.context["cards"][0]["days"]
+
+
+@pytest.mark.django_db
+def test_dashboard_omits_the_secondary_line_when_a_skill_has_no_description(client, user) -> None:
+    skill = Skill.objects.create(
+        slug="private-no-description",
+        name="Private Skill",
+        visibility=Skill.Visibility.PRIVATE,
+        created_by=user,
+    )
+    UserSkill.objects.create(user=user, skill=skill, started_on=timezone.localdate())
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard-preview"))
+
+    content = response.content.decode()
+    assert "<h3>Private Skill</h3></div>" in content
+    assert "<h3>Private Skill</h3><p" not in content

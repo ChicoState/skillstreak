@@ -50,8 +50,8 @@ future work but receive no creation or editing controls in this slice.
 
 ## Out of Scope
 
-- Friends, sharing, rankings, messages, notifications, public skills, custom
-  skills, password reset, and production provisioning.
+- Friends, sharing, rankings, messages, notifications, public custom skills,
+  editing/deleting custom skills, password reset, and production provisioning.
 - Entering metric values, defining schedules, editing prior completions,
   changing a user's timezone, or a stored streak/leaderboard score.
 - Making an inactive selection visible in the dashboard tracker.
@@ -67,6 +67,10 @@ future work but receive no creation or editing controls in this slice.
   currently configured UTC application timezone.
 - The initial user-facing interaction is binary for every seeded skill,
   regardless of the richer metric and schedule capabilities in the schema.
+- A user-created skill is `PRIVATE`, owned by its creator, and immediately
+  selected for that user. Its goal is daily, an any-N-days weekly goal, or an
+  any-N-days calendar-month goal. The completion action remains binary; the
+  dashboard derives progress for the current goal period.
 
 ## Commands
 

@@ -28,14 +28,14 @@
           </header>
           <section class="overview" aria-labelledby="overview-title"><div><p class="eyebrow">Today’s focus</p><h2 id="overview-title">Small steps, strong momentum.</h2></div><p class="overview-progress"><strong>{{ cards|length }}</strong> active skill{{ cards|length|pluralize }}</p></section>
           <section id="skills" class="skills-section" aria-labelledby="skills-title">
-            <div class="section-heading"><div><p class="eyebrow">Your routine</p><h2 id="skills-title">Your skills</h2></div></div>
+            <div class="section-heading"><div><p class="eyebrow">Your routine</p><h2 id="skills-title">Your skills</h2></div><a class="skills-add-skill library-button" href="{% url 'create-custom-skill' %}">Add skill</a></div>
             {% if cards %}
             <div class="skill-grid">
               {% for card in cards %}
               <article class="skill-card">
-                <div class="skill-card-heading"><div class="skill-icon running" aria-hidden="true">✓</div><div><h3>{{ card.user_skill.skill.name }}</h3><p>{{ card.weekly_completed }} day{{ card.weekly_completed|pluralize }} completed this week</p></div></div>
+                <div class="skill-card-heading"><div class="skill-icon running" aria-hidden="true">✓</div><div><h3>{{ card.user_skill.skill.name }}</h3>{% if card.user_skill.skill.description %}<p>{{ card.user_skill.skill.description }}</p>{% endif %}</div></div>
                 <div class="card-divider"></div>
-                <div class="skill-details"><div><span class="detail-label">This week</span><strong>{{ card.weekly_completed }} of 7 days</strong></div><div class="week" aria-label="{{ card.user_skill.skill.name }} activity this week">{% for day in card.days %}<span{% if day.complete %} class="done"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"D"|slice:":1" }}</span>{% endfor %}</div></div>
+                <div class="skill-details"><div><span class="detail-label">Progress</span><strong{% if card.goal_met %} class="goal-met"{% endif %}>{{ card.progress_text }}</strong></div><div class="week" aria-label="{{ card.user_skill.skill.name }} activity this week">{% for day in card.days %}<span{% if day.complete %} class="done"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"D"|slice:":1" }}</span>{% endfor %}</div></div>
                 <form method="post" action="{% url 'toggle-completion' card.user_skill.id %}">{% csrf_token %}<button class="completion-button{% if card.today_completed %} complete{% endif %}" type="submit">{% if card.today_completed %}Completed today — undo{% else %}Mark complete today{% endif %}</button></form>
               </article>
               {% endfor %}

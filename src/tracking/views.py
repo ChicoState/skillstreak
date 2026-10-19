@@ -1,12 +1,58 @@
-"""Protected skill selection and binary completion actions."""
+"""Protected skill selection, creation, and binary completion actions."""
+
+from uuid import uuid4
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
-from .models import DailyCompletion, Skill, UserSkill
+from .forms import CustomSkillForm
+from .models import DailyCompletion, Skill, UserSkill, UserSkillSchedule
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def create_custom_skill(request: HttpRequest) -> HttpResponse:
+    """Create an active private skill and its current recurring goal."""
+    form = CustomSkillForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            skill = Skill.objects.create(
+                slug=f"private-{uuid4().hex}",
+                name=form.cleaned_data["name"],
+                description=form.cleaned_data["description"],
+                visibility=Skill.Visibility.PRIVATE,
+                created_by=request.user,
+            )
+            user_skill = UserSkill.objects.create(
+                user=request.user,
+                skill=skill,
+                started_on=form.cleaned_data["started_on"],
+            )
+            frequency = form.cleaned_data["frequency"]
+            schedule_data = {
+                "user_skill": user_skill,
+                "effective_from": user_skill.started_on,
+            }
+            if frequency == CustomSkillForm.Frequency.DAILY:
+                schedule_data["rule_type"] = UserSkillSchedule.RuleType.DAILY
+            elif frequency == CustomSkillForm.Frequency.WEEKLY:
+                schedule_data.update(
+                    rule_type=UserSkillSchedule.RuleType.DAYS_PER_WEEK,
+                    target_days_per_week=form.cleaned_data["target_days"],
+                    week_starts_on=1,
+                )
+            else:
+                schedule_data.update(
+                    rule_type=UserSkillSchedule.RuleType.DAYS_PER_MONTH,
+                    target_days_per_month=form.cleaned_data["target_days"],
+                )
+            UserSkillSchedule.objects.create(**schedule_data)
+        return redirect("dashboard-preview")
+    return render(request, "tracking/create_skill.html", {"form": form})
 
 
 @login_required

@@ -1,0 +1,25 @@
+.custom-skill-page { width: min(100% - 2rem, 52rem); margin: 0 auto; padding: 1.5rem 0 3rem; }
+.custom-skill-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.back-link, .cancel-link { color: var(--moss-dark); font-weight: 750; text-decoration: none; }
+.custom-skill-panel { width: min(100%, 42rem); margin: 3rem auto 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1.5rem; }
+.custom-skill-panel h1 { margin-bottom: .5rem; font-size: clamp(2rem, 6vw, 3rem); }
+.custom-skill-form { display: grid; gap: .6rem; margin-top: 2rem; }
+.custom-skill-form > label, .frequency-fieldset legend { margin-top: .75rem; font-size: .875rem; font-weight: 750; }
+.custom-skill-form input:not([type="radio"]), .custom-skill-form textarea { width: 100%; min-height: 3rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface); padding: .7rem .9rem; color: var(--ink); }
+.custom-skill-form input:not([type="radio"]):focus-visible, .custom-skill-form textarea:focus-visible, .custom-skill-form button:focus-visible, .custom-skill-page a:focus-visible { border-color: var(--moss); outline: 2px solid var(--sage); outline-offset: 2px; }
+.custom-skill-form textarea { min-height: 7rem; resize: vertical; }
+.custom-skill-form label span { color: var(--muted); font-weight: 500; }
+.frequency-fieldset { margin: .8rem 0 0; border: 0; padding: 0; }
+.frequency-options { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .7rem; }
+.frequency-option input { position: absolute; opacity: 0; }
+.frequency-option span { display: inline-flex; min-height: 2.75rem; align-items: center; border: 1px solid var(--line); border-radius: .6rem; background: var(--surface); padding: 0 .9rem; color: var(--muted); font-weight: 750; cursor: pointer; }
+.frequency-option input:checked + span { border-color: var(--moss); background: var(--moss); color: white; }
+.frequency-option input:focus-visible + span { border-color: var(--moss); outline: 2px solid var(--sage); outline-offset: 3px; }
+.target-days-field { margin-top: .7rem; }
+.target-days-input { display: flex; align-items: center; gap: .7rem; }
+.target-days-input input { max-width: 5.5rem; }
+.target-days-input span, .field-hint { color: var(--muted); font-size: .85rem; }
+.field-hint { margin: .25rem 0 0; }
+.form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 1.25rem; margin-top: 1.2rem; }
+.form-actions .primary-button { min-width: 9rem; margin-top: 0; }
+@media (max-width: 30rem) { .custom-skill-header { align-items: flex-start; flex-direction: column; } .custom-skill-panel { margin-top: 2rem; padding: 1.25rem; } .target-days-input { align-items: flex-start; flex-direction: column; gap: .35rem; } }

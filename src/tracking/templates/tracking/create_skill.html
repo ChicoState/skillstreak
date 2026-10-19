@@ -1,0 +1,77 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Add a skill | SkillStreak</title>
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'tracking/create_skill.css' %}">
+  </head>
+  <body>
+    <main class="preview">
+      <section class="custom-skill-page" aria-labelledby="create-skill-title">
+        <header class="custom-skill-header">
+          <a class="brand" href="{% url 'dashboard-preview' %}"><span class="brand-mark" aria-hidden="true">S</span><span>SkillStreak</span></a>
+          <a class="back-link" href="{% url 'dashboard-preview' %}">← Dashboard</a>
+        </header>
+        <section class="custom-skill-panel">
+          <p class="eyebrow">Build your routine</p>
+          <h1 id="create-skill-title">Add a new skill</h1>
+          <p class="login-copy">Choose a goal that fits the streak you want to build.</p>
+          <form class="custom-skill-form" method="post" autocomplete="off">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+            <label for="{{ form.name.id_for_label }}">New skill</label>
+            {{ form.name }}
+            {% for error in form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            <label for="{{ form.started_on.id_for_label }}">Start date</label>
+            {{ form.started_on }}
+            {% for error in form.started_on.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            <fieldset class="frequency-fieldset">
+              <legend>Streak frequency</legend>
+              <div class="frequency-options">
+                {% for value, label in form.fields.frequency.choices %}
+                <label class="frequency-option"><input type="radio" name="{{ form.frequency.html_name }}" value="{{ value }}"{% if form.frequency.value == value %} checked{% endif %}><span>{{ label }}</span></label>
+                {% endfor %}
+              </div>
+              {% for error in form.frequency.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </fieldset>
+            <div class="target-days-field" data-target-days>
+              <label for="{{ form.target_days.id_for_label }}">Target days</label>
+              <div class="target-days-input">{{ form.target_days }}<span data-target-suffix>days per week</span></div>
+              <p class="field-hint" data-target-hint>Choose from 1 to 7 days each week.</p>
+              {% for error in form.target_days.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+            <label for="{{ form.description.id_for_label }}">Description <span>(optional)</span></label>
+            {{ form.description }}
+            {% for error in form.description.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            <div class="form-actions"><a class="cancel-link" href="{% url 'dashboard-preview' %}">Cancel</a><button class="primary-button" type="submit">Add skill <span aria-hidden="true">→</span></button></div>
+          </form>
+        </section>
+      </section>
+    </main>
+    <script>
+      const frequencyInputs = document.querySelectorAll('input[name="frequency"]');
+      const targetField = document.querySelector('[data-target-days]');
+      const targetInput = document.querySelector('#{{ form.target_days.id_for_label }}');
+      const suffix = document.querySelector('[data-target-suffix]');
+      const hint = document.querySelector('[data-target-hint]');
+      function updateTargetField() {
+        const selectedFrequency = document.querySelector('input[name="frequency"]:checked');
+        const frequency = selectedFrequency ? selectedFrequency.value : 'daily';
+        const isDaily = frequency === 'daily';
+        targetField.hidden = isDaily;
+        targetInput.disabled = isDaily;
+        if (!isDaily) {
+          const monthly = frequency === 'monthly';
+          targetInput.max = monthly ? 31 : 7;
+          suffix.textContent = monthly ? 'days per month' : 'days per week';
+          hint.textContent = monthly ? 'Choose from 1 to 31 days each calendar month.' : 'Choose from 1 to 7 days each week.';
+        }
+      }
+      frequencyInputs.forEach((input) => input.addEventListener('change', updateTargetField));
+      updateTargetField();
+    </script>
+  </body>
+</html>
