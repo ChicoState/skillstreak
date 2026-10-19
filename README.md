@@ -75,6 +75,16 @@ skill dashboard at `/`. It is not a production account system.
    docker compose exec web ruff check .
    ```
 
+   To permanently remove the specific local account `kbruce4@csuchico.edu`
+   and its cascading records, run:
+
+   ```sh
+   ./scripts/delete-kbruce4.sh --confirm
+   ```
+
+   The script requires `--confirm`, uses Django's deletion rules, and cannot
+   be undone without a database backup.
+
 5. Validate the static infrastructure configuration:
 
    ```sh
