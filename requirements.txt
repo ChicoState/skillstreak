@@ -29,7 +29,7 @@ pip-tools==7.6.2
     # via -r requirements.in
 playwright==1.64.0
     # via -r requirements.in
-pluggy==1.6.0
+pluggy==1.7.0
     # via
     #   pytest
     #   pytest-cov

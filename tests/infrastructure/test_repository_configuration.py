@@ -48,12 +48,26 @@ def test_pull_request_quality_job_has_a_postgresql_service_for_django() -> None:
         in workflow
     )
     assert "DJANGO_SETTINGS_MODULE: skillstreak.settings.production" in workflow
+    assert "Install Chromium for browser tests" in workflow
+    assert "python -m playwright install --with-deps chromium" in workflow
 
 
-def test_runtime_image_excludes_development_dependencies_and_refreshes_os_packages() -> None:
+def test_dedicated_development_target_includes_tools_and_runtime_excludes_them() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text()
 
+    development, runtime = dockerfile.split("FROM python:3.14.7-slim-bookworm AS runtime")
+
+    assert "FROM python:3.14.7-slim-bookworm AS development" in development
+    assert "COPY requirements.txt ./" in development
+    assert "python -m playwright install --with-deps chromium" in development
     assert "COPY requirements.runtime.txt ./" in dockerfile
-    assert "COPY requirements.txt ./" not in dockerfile
+    assert "COPY --from=builder /install /usr/local" in runtime
+    assert "COPY requirements.txt ./" not in runtime
     assert "apt-get upgrade --yes" in dockerfile
     assert "libpq5" in dockerfile
+
+
+def test_compose_uses_the_development_target() -> None:
+    configuration = (ROOT / "compose.yml").read_text()
+
+    assert "target: development" in configuration

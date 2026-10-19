@@ -30,7 +30,8 @@ exist yet.
 - `docs/decisions/002-internal-email-accounts.md`: account-authentication
   rationale.
 - `docs/specs/selectable-binary-skill-tracking.md`: selected-skill scope.
-- Browser tests and production account flows: **not created yet**.
+- `tests/browser/`: Chromium Playwright coverage for critical signed-in flows.
+- Production account flows: **not created yet**.
 
 ## Required reading and skill routing
 

@@ -126,10 +126,11 @@ is account configuration, not a progress metric.
 
 ### `SKILL`
 
-The reusable definition of a trackable activity. The initial system skills are
-Exercise, Eat Healthy, Read, Learn, Touch Grass, Go to Gym, Hobby, Drink
-Water, and Sleep. New system or public skills are rows, not model or migration
-changes. `initial_data.sql` seeds only those nine system skills.
+The reusable definition of a trackable activity. The initial catalog contains
+109 general-audience system skills, including Exercise, Eat Healthy, Read,
+Learn, Touch Grass, Go to Gym, Hobby, Drink Water, and Sleep. New system or
+public skills are rows, not model or migration changes. The Django management
+command seeds the system catalog idempotently.
 
 - `parent_id` is optional and supports organizing a narrower skill beneath a
   broader category; tracking a child does not automatically complete its
