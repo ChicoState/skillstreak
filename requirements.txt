@@ -27,9 +27,9 @@ packaging==26.3
     #   wheel
 pip-tools==7.6.2
     # via -r requirements.in
-playwright==1.63.0
+playwright==1.64.0
     # via -r requirements.in
-pluggy==1.6.0
+pluggy==1.7.0
     # via
     #   pytest
     #   pytest-cov
@@ -37,7 +37,7 @@ psycopg==3.3.6
     # via -r requirements.in
 psycopg-binary==3.3.6
     # via psycopg
-pyee==13.0.1
+pyee==14.0.0
     # via playwright
 pygments==2.21.0
     # via pytest
