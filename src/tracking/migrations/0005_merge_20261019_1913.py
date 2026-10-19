@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tracking', '0004_userpreference_reminders_enabled'),
-        ('tracking', '0004_userskillschedule_target_days_per_month'),
+        ("tracking", "0004_userpreference_reminders_enabled"),
+        ("tracking", "0004_userskillschedule_target_days_per_month"),
     ]
 
-    operations = [
-    ]
+    operations = []
