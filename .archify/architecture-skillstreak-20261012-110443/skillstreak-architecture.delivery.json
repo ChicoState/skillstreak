@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "7c2cbe80-8aba-4f7f-b7a9-6c7adcc20aa6",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/branson/School/csci-430/skillstreak/.archify/architecture-skillstreak-20261012-110443/candidate.json",
+  "output": "/Users/branson/School/csci-430/skillstreak/.archify/architecture-skillstreak-20261012-110443/skillstreak-architecture.html",
+  "specification": {
+    "sha256": "0c958c327e63d87ceb4b947d47231af5ffcae5f27bc542ccd4a34410798029d3",
+    "bytes": 8307
+  },
+  "artifact": {
+    "sha256": "766235316c78a07bd73bef9c5a58b28ec2ee4203687a21478c1ac3a2dd02ebeb",
+    "bytes": 772305
+  }
+}
