@@ -116,18 +116,18 @@ and ownership constraints.
 
 **Acceptance criteria:**
 
-- [ ] Skills belong to exactly one account and schedules belong to exactly one
+- [x] Skills belong to exactly one account and schedules belong to exactly one
       skill.
-- [ ] Duplicate `(skill, weekday)` and `(skill, completed_on)` rows are
+- [x] Duplicate `(skill, weekday)` and `(skill, completed_on)` rows are
       rejected at the database layer.
-- [ ] The migration applies cleanly on PostgreSQL and does not add fixtures or
+- [x] The migration applies cleanly on PostgreSQL and does not add fixtures or
       unrelated product data.
 
 **Verification:**
 
-- [ ] Add model and constraint tests in `tests/application/test_skills.py`.
-- [ ] Run `docker compose exec web pytest tests/application/test_skills.py`.
-- [ ] Run `docker compose exec web python manage.py migrate`.
+- [x] Add model and constraint tests in `tests/application/test_skills.py`.
+- [x] Run `docker compose exec web pytest tests/application/test_skills.py`.
+- [x] Run `docker compose exec web python manage.py migrate --noinput`.
 
 **Dependencies:** Task 1.
 
@@ -140,8 +140,10 @@ and ownership constraints.
 ### Checkpoint: Data foundations
 
 - [x] Task 1 tests pass against PostgreSQL.
+- [x] Task 2 tests pass against PostgreSQL.
 - [x] `docker compose exec web python manage.py check` passes.
-- [x] `docker compose exec web python manage.py makemigrations --check` passes for Task 1.
+- [x] `docker compose exec web python manage.py makemigrations --check` passes
+      for Tasks 1–2.
 
 ### Phase 2: Progression and mutation behavior
 
