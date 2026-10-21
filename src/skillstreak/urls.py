@@ -8,6 +8,7 @@ from .health import health_check
 
 urlpatterns = [
     path("", include("accounts.urls")),
+    path("", include("skills.urls")),
     path("", preview, name="dashboard-preview"),
     path("healthz", health_check, name="health-check"),
 ]
