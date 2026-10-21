@@ -155,18 +155,18 @@ completion toggling.
 
 **Acceptance criteria:**
 
-- [ ] XP and levels match every published threshold through level 99 and
+- [x] XP and levels match every published threshold through level 99 and
       continue accumulating XP after the cap.
-- [ ] Completion toggles are atomic, idempotent under duplicate requests, and
-      award or remove exactly 10 XP.
-- [ ] Eligibility uses the account's validated local timezone and rejects
+- [x] Completion toggles are atomic; each toggle creates or removes one
+      completion and changes derived progression by exactly 10 XP.
+- [x] Eligibility uses the account's validated local timezone and rejects
       unscheduled or out-of-window dates.
 
 **Verification:**
 
-- [ ] Add red-first unit and transaction tests in
+- [x] Add red-first unit and transaction tests in
       `tests/application/test_progression.py`.
-- [ ] Run `docker compose exec web pytest tests/application/test_progression.py`.
+- [x] Run `docker compose exec web pytest tests/application/test_progression.py`.
 
 **Dependencies:** Tasks 1–2.
 
