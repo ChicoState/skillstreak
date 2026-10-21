@@ -182,18 +182,18 @@ and the authenticated timezone synchronization endpoint.
 
 **Acceptance criteria:**
 
-- [ ] Authenticated members can create a named skill with one or more
+- [x] Authenticated members can create a named skill with one or more
       weekdays.
-- [ ] Completion mutations are POST-only, CSRF-protected, ownership-scoped,
+- [x] Completion mutations are POST-only, CSRF-protected, ownership-scoped,
       and reject forged dates, weekdays, XP, and skill owners.
-- [ ] Anonymous requests redirect to sign-in and cross-account identifiers do
+- [x] Anonymous requests redirect to sign-in and cross-account identifiers do
       not expose or mutate another member's data.
 
 **Verification:**
 
-- [ ] Add form and view tests covering authentication, CSRF, validation, and
+- [x] Add form and view tests covering authentication, CSRF, validation, and
       cross-account isolation.
-- [ ] Run `docker compose exec web pytest tests/application/test_skills.py
+- [x] Run `docker compose exec web pytest tests/application/test_skills.py
       tests/application/test_progression.py`.
 
 **Dependencies:** Task 3.
@@ -206,10 +206,10 @@ and the authenticated timezone synchronization endpoint.
 
 ### Checkpoint: Core behavior
 
-- [ ] Skill creation and completion mutation tests pass.
-- [ ] Anonymous access, CSRF rejection, and cross-account isolation are
+- [x] Skill creation and completion mutation tests pass.
+- [x] Anonymous access, CSRF rejection, and cross-account isolation are
       covered.
-- [ ] Ruff formatting and linting pass for the new domain and route code.
+- [x] Ruff formatting and linting pass for the new domain and route code.
 
 ### Phase 3: Dashboard and release verification
 
