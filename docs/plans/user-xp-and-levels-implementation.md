@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — awaiting plan approval.
+Approved — 2026-10-21.
 
 ## Overview
 
@@ -77,6 +77,207 @@ dashboard is last because it consumes the completed domain interface.
 5. **Verification** — Build the test suite red-first, then exercise the user
    flow in a browser at the project breakpoints and run all repository checks.
 
+## Task Breakdown
+
+### Phase 1: Data foundations
+
+#### Task 1: Add account timezone support
+
+**Description:** Add a nullable, validated IANA timezone field to the custom
+account model and create the account migration without changing existing
+authentication behavior.
+
+**Acceptance criteria:**
+
+- [x] A user can persist a valid IANA timezone or remain unset before browser
+      synchronization.
+- [x] Invalid timezone names are rejected by model validation.
+- [x] Existing account registration and sign-in tests continue to pass.
+
+**Verification:**
+
+- [x] Add focused model and migration tests, then run
+      `docker compose exec web pytest tests/application/test_accounts.py`.
+- [x] Run `docker compose exec web python manage.py makemigrations --check`.
+
+**Dependencies:** None.
+
+**Files likely touched:** `src/accounts/models.py`,
+`src/accounts/migrations/0002_user_timezone.py`,
+`tests/application/test_accounts.py`.
+
+**Estimated scope:** Medium (3 files).
+
+#### Task 2: Create skills, schedules, and completions
+
+**Description:** Add the `skills` app and PostgreSQL-backed models for owned
+skills, weekday schedules, and dated completions with the required uniqueness
+and ownership constraints.
+
+**Acceptance criteria:**
+
+- [ ] Skills belong to exactly one account and schedules belong to exactly one
+      skill.
+- [ ] Duplicate `(skill, weekday)` and `(skill, completed_on)` rows are
+      rejected at the database layer.
+- [ ] The migration applies cleanly on PostgreSQL and does not add fixtures or
+      unrelated product data.
+
+**Verification:**
+
+- [ ] Add model and constraint tests in `tests/application/test_skills.py`.
+- [ ] Run `docker compose exec web pytest tests/application/test_skills.py`.
+- [ ] Run `docker compose exec web python manage.py migrate`.
+
+**Dependencies:** Task 1.
+
+**Files likely touched:** `src/skills/apps.py`, `src/skills/models.py`,
+`src/skills/migrations/0001_initial.py`, `src/skillstreak/settings/base.py`,
+`tests/application/test_skills.py`.
+
+**Estimated scope:** Large (5 files).
+
+### Checkpoint: Data foundations
+
+- [x] Task 1 tests pass against PostgreSQL.
+- [x] `docker compose exec web python manage.py check` passes.
+- [x] `docker compose exec web python manage.py makemigrations --check` passes for Task 1.
+
+### Phase 2: Progression and mutation behavior
+
+#### Task 3: Implement progression calculations and eligibility
+
+**Description:** Add a focused domain service for XP totals, level thresholds,
+level-cap behavior, local-date windows, scheduled-day eligibility, and atomic
+completion toggling.
+
+**Acceptance criteria:**
+
+- [ ] XP and levels match every published threshold through level 99 and
+      continue accumulating XP after the cap.
+- [ ] Completion toggles are atomic, idempotent under duplicate requests, and
+      award or remove exactly 10 XP.
+- [ ] Eligibility uses the account's validated local timezone and rejects
+      unscheduled or out-of-window dates.
+
+**Verification:**
+
+- [ ] Add red-first unit and transaction tests in
+      `tests/application/test_progression.py`.
+- [ ] Run `docker compose exec web pytest tests/application/test_progression.py`.
+
+**Dependencies:** Tasks 1–2.
+
+**Files likely touched:** `src/skills/progression.py`,
+`tests/application/test_progression.py`.
+
+**Estimated scope:** Small (2 files).
+
+#### Task 4: Add skill creation, timezone sync, and completion routes
+
+**Description:** Add server-validated forms, ownership-scoped POST views, URLs,
+and the authenticated timezone synchronization endpoint.
+
+**Acceptance criteria:**
+
+- [ ] Authenticated members can create a named skill with one or more
+      weekdays.
+- [ ] Completion mutations are POST-only, CSRF-protected, ownership-scoped,
+      and reject forged dates, weekdays, XP, and skill owners.
+- [ ] Anonymous requests redirect to sign-in and cross-account identifiers do
+      not expose or mutate another member's data.
+
+**Verification:**
+
+- [ ] Add form and view tests covering authentication, CSRF, validation, and
+      cross-account isolation.
+- [ ] Run `docker compose exec web pytest tests/application/test_skills.py
+      tests/application/test_progression.py`.
+
+**Dependencies:** Task 3.
+
+**Files likely touched:** `src/skills/forms.py`, `src/skills/views.py`,
+`src/skills/urls.py`, `src/skillstreak/urls.py`,
+`tests/application/test_skills.py`.
+
+**Estimated scope:** Large (5 files).
+
+### Checkpoint: Core behavior
+
+- [ ] Skill creation and completion mutation tests pass.
+- [ ] Anonymous access, CSRF rejection, and cross-account isolation are
+      covered.
+- [ ] Ruff formatting and linting pass for the new domain and route code.
+
+### Phase 3: Dashboard and release verification
+
+#### Task 5: Replace sample dashboard data with account-owned progress
+
+**Description:** Update dashboard orchestration and templates to display the
+authenticated member's skills, the prior seven local dates, completion state,
+and derived XP/level progress, including an empty state and timezone-sync
+behavior.
+
+**Acceptance criteria:**
+
+- [ ] Static Jogging, Reading, sample calendar, and sample progression values
+      are removed from the rendered dashboard.
+- [ ] The dashboard displays only the signed-in member's skills and derived
+      progression, with accessible POST completion controls.
+- [ ] The layout remains usable at 320px, 768px, 1024px, and 1440px.
+
+**Verification:**
+
+- [ ] Update dashboard integration tests to prove owner-only rendering and
+      empty-state behavior.
+- [ ] Run the authenticated flow in a real browser, including keyboard use,
+      skill creation, completion toggling, and visible XP/level updates.
+
+**Dependencies:** Task 4.
+
+**Files likely touched:** `src/dashboard/views.py`,
+`src/dashboard/templates/dashboard/preview.html`,
+`src/dashboard/static/dashboard/styles.css`,
+`tests/application/test_dashboard.py`.
+
+**Estimated scope:** Medium (4 files).
+
+#### Task 6: Run complete verification and document the finished slice
+
+**Description:** Run the full repository checks, resolve regressions, and
+update the project documentation to describe the implemented user-owned
+progression behavior and verification workflow.
+
+**Acceptance criteria:**
+
+- [ ] Django tests, coverage, Ruff, infrastructure checks, image smoke test,
+      PostgreSQL smoke test, and browser verification pass.
+- [ ] Documentation no longer claims that user-owned skill/progress behavior
+      is absent.
+- [ ] The final diff contains no secrets, generated reports, local volumes, or
+      build artifacts.
+
+**Verification:**
+
+- [ ] Run `docker compose exec web pytest`.
+- [ ] Run `docker compose exec web ruff format --check .` and
+      `docker compose exec web ruff check .`.
+- [ ] Run `./scripts/check-infrastructure.sh`, `./scripts/smoke-image.sh`,
+      `./scripts/smoke-postgres.sh`, and `git diff --check`.
+
+**Dependencies:** Task 5.
+
+**Files likely touched:** `README.md`, `AGENTS.md`, and affected test or
+documentation files identified during verification.
+
+**Estimated scope:** Medium (up to 5 files per focused correction).
+
+### Checkpoint: Complete
+
+- [ ] All specification success criteria pass.
+- [ ] All task acceptance criteria are checked off.
+- [ ] The implementation is ready for human review before merge.
+
 ## Security and Abuse Cases
 
 | Case | Control | Verification |
@@ -131,4 +332,5 @@ dashboard is last because it consumes the completed domain interface.
 
 ## Open Questions
 
-None. The next gated phase is task breakdown after human approval of this plan.
+None. The task breakdown is approved by the plan approval recorded above;
+implementation may begin one task at a time.
