@@ -6,17 +6,41 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /build
 
+COPY requirements.runtime.txt ./
+RUN python -m pip install --prefix=/install --requirement requirements.runtime.txt
+
+FROM python:3.14.7-slim-bookworm AS development
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
+WORKDIR /app
+
 COPY requirements.txt ./
-RUN python -m pip install --prefix=/install --requirement requirements.txt
+RUN python -m pip install --requirement requirements.txt \
+    && python -m playwright install --with-deps chromium \
+    && groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home app
+COPY --chown=app:app . .
+USER app
 
 FROM python:3.14.7-slim-bookworm AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src \
     PATH=/usr/local/bin:$PATH
 WORKDIR /app
 
-RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
+RUN apt-get update \
+    && apt-get upgrade --yes \
+    && apt-get install --yes --no-install-recommends libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home app
 COPY --from=builder /install /usr/local
 COPY --chown=app:app . .
 RUN chown app:app /app
@@ -24,5 +48,7 @@ USER app
 
 EXPOSE 8000
 
-# No CMD or HEALTHCHECK is intentionally defined. Those require the future Django
-# project's application-owned ASGI/WSGI entrypoint and health route.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD python -c "import os; from urllib.request import urlopen; urlopen(f'http://127.0.0.1:{os.getenv(\"PORT\", \"8000\")}/healthz', timeout=2).read()"
+
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8000} skillstreak.wsgi:application"]

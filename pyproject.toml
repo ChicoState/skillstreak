@@ -9,6 +9,8 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]
+DJANGO_SETTINGS_MODULE = "skillstreak.settings.local"
+pythonpath = ["src"]
 
 [tool.coverage.run]
 branch = true

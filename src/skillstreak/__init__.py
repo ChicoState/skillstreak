@@ -1,0 +1,1 @@
+"""SkillStreak Django project package."""
