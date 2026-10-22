@@ -35,7 +35,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/usr/local/bin:$PATH
 WORKDIR /app
 
-RUN apt-get update \
+RUN python -m pip install --no-cache-dir "pip==26.2.2" \
+    && apt-get update \
     && apt-get upgrade --yes \
     && apt-get install --yes --no-install-recommends libpq5 \
     && rm -rf /var/lib/apt/lists/* \
