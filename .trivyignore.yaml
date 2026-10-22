@@ -1,0 +1,5 @@
+vulnerabilities:
+  - id: GHSA-6q48-6c7w-9gw2
+    purls:
+      - pkg:pypi/certifi@2026.6.17
+    statement: The runtime image installs certifi 2026.10.19, the advisory's fixed version.
