@@ -8,7 +8,13 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from tracking.models import DailyCompletion, Skill, UserSkill
+from tracking.models import (
+    DailyCompletion,
+    MissedSkillEpisode,
+    Skill,
+    UserPreference,
+    UserSkill,
+)
 from tracking.progress import current_goal_progress
 
 
@@ -23,6 +29,18 @@ def preview(request: HttpRequest) -> HttpResponse:
         .prefetch_related(Prefetch("userskillschedule_set", to_attr="prefetched_schedules"))
         .order_by("skill__name")
     )
+    has_reminders_enabled = UserPreference.objects.filter(
+        user=request.user,
+        reminders_enabled=True,
+    ).exists()
+    active_missed_skill_ids = set()
+    if has_reminders_enabled:
+        active_missed_skill_ids = set(
+            MissedSkillEpisode.objects.filter(
+                user_skill__in=active_skills,
+                closed_at__isnull=True,
+            ).values_list("user_skill_id", flat=True)
+        )
     month_start = today.replace(day=1)
     completion_start = min(week_start, month_start)
     completions = DailyCompletion.objects.filter(
@@ -54,6 +72,7 @@ def preview(request: HttpRequest) -> HttpResponse:
                     goal_progress is not None
                     and goal_progress["completed"] >= goal_progress["target"]
                 ),
+                "is_missed": item.id in active_missed_skill_ids,
             }
         )
     library_query = request.GET.get("q", "").strip()

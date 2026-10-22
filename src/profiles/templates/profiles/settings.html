@@ -14,6 +14,15 @@
         <p class="eyebrow">Profile</p>
         <h1 id="profile-settings-title">Profile &amp; settings</h1>
         <p class="login-copy">Signed in as <strong>{{ user.email }}</strong>.</p>
+        {% if missed_episodes %}
+        <section class="reminder-digest" aria-labelledby="missed-skills-title">
+          <p class="eyebrow">Reminder</p>
+          <h2 id="missed-skills-title">Missed skills</h2>
+          <p>You have missed the following skills. Completing a skill clears its dashboard reminder.</p>
+          <ul>{% for episode in missed_episodes %}<li>{{ episode.user_skill.skill.name }}</li>{% endfor %}</ul>
+          <form method="post" action="{% url 'dismiss-profile-reminder-digest' %}">{% csrf_token %}<button class="text-button" type="submit">Dismiss reminder</button></form>
+        </section>
+        {% endif %}
         <form class="preview-form" method="post">
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ return_url }}">

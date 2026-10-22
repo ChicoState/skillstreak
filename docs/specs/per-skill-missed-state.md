@@ -10,8 +10,7 @@ presentation, while a reusable domain service owns missed-state calculation.
 
 Each opted-in user's scheduled skill independently gains a missed state after
 its first missed scheduled period. The dashboard shows a missed icon on that
-skill until the user completes the skill or explicitly resolves the missed
-state.
+skill until the user marks that skill completed.
 
 Profile & settings also shows a dismissible digest of currently missed skills.
 Dismissing the digest does not resolve any skill or remove its icon. The digest
@@ -33,8 +32,7 @@ episodes so acknowledgement cannot alter missed state.
   midnight without a completion.
 - The first missed period creates an active per-skill missed state; the
   dashboard then renders a missed icon on that skill.
-- Completing that skill or explicitly resolving its missed state closes the
-  active episode and resets its count.
+- Completing that skill closes the active episode and resets its count.
 - Reminder opt-out closes all of the user's active missed states. Re-enabling
   starts a fresh observation window, never a historical backlog.
 
@@ -50,7 +48,7 @@ episodes so acknowledgement cannot alter missed state.
 
 ### Alternatives considered
 
-#### Keep the profile digest visible until all missed state is resolved
+#### Keep the profile digest visible until all missed state clears
 
 Rejected. Users need to be able to acknowledge the summary without falsely
 resolving missed work. A new missed skill makes the digest visible again.
@@ -78,13 +76,13 @@ their timezone, reminder opt-in value, and expected-date evaluator.
 
 It intentionally excludes email/provider integration, email eligibility and
 escalation, email content choices, configurable reminder time, background
-scheduling infrastructure, profile notification inboxes, and mobile
-occurrence/time-slot reminders.
+scheduling infrastructure, persistent notification inboxes beyond this single
+profile message, and mobile occurrence/time-slot reminders.
 
 ### Before submitting
 
 - [ ] Confirm first-miss icons appear only for opted-in users after midnight.
-- [ ] Confirm completion and manual resolution close only that skill's episode.
+- [ ] Confirm only completion closes that skill's missed episode.
 - [ ] Confirm opt-out closes active state and re-opt-in starts fresh.
 - [ ] Confirm all current-user ownership and state changes are protected.
 
@@ -92,9 +90,9 @@ occurrence/time-slot reminders.
 
 The implementation needs a durable active missed episode per selected skill,
 including at least the first/most recent missed local date, consecutive-miss
-count, and resolution state.
-Completed or manually resolved episodes are retained as closed history rather
-than used as active dashboard state.
+count, and closure state.
+Completed episodes are retained as closed history rather than used as active
+dashboard state.
 
 At most one active episode may exist for a `UserSkill`. The database, not only
 application code, must enforce that invariant.
@@ -107,15 +105,15 @@ that marker; it does not modify the episode records themselves.
 
 - An opted-in scheduled skill shows a missed icon after its first local-day
   miss.
-- A completion or manual resolution removes that icon and starts a new future
-  observation window for that skill.
+- A completion removes that icon and starts a new future observation window for
+  that skill.
 - A reminder opt-out removes all active missed icons/state for that user.
 - The reconciliation service is idempotent for a user and local date.
 - A user can dismiss the profile digest without clearing an icon or resolving a
   missed episode.
 - The digest remains hidden after dismissal and reappears only when a new skill
   enters a missed episode, listing all current unresolved missed skills.
-- One user cannot inspect, resolve, or alter another user's missed state.
+- One user cannot inspect or alter another user's missed state.
 
 ## Verification
 
@@ -129,5 +127,5 @@ docker compose exec web ruff check .
 
 Use PostgreSQL-backed model tests for the single-active-episode invariant,
 pure/service tests for timezone boundaries and consecutive-miss counting,
-protected view tests for resolution and digest dismissal, and a browser check
+protected view tests for completion and digest dismissal, and a browser check
 for dashboard icon and profile-digest behavior.

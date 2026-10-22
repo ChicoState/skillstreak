@@ -14,8 +14,8 @@ infrastructure.
 ### Proposed solution
 
 Build persistence and reconciliation first, then surface the indicator and
-manual resolution in the dashboard and a separately dismissible digest in the
-profile.
+completion-driven state in the dashboard and a separately dismissible digest
+in the profile.
 
 ### Alternatives considered
 
@@ -27,7 +27,7 @@ independently.
 
 #### Derive dashboard icons only at render time
 
-Rejected. Explicit state is required for manual resolution, fresh opt-in
+Rejected. Explicit state is required for completion-driven icons, fresh opt-in
 windows, and a later email feature to consume without recreating history.
 
 #### Add a global recurring job in this slice
@@ -38,16 +38,16 @@ reconcile the current user within existing authenticated interactions.
 
 ### Additional context
 
-This plan implements [Per-Skill Missed State](../specs/per-skill-missed-state.md).
+This plan implements [In-App Per-Skill Missed State](../specs/per-skill-missed-state.md).
 It depends on profile settings and the user-skill schedule evaluator. It does
-not implement email, reminder-time preferences, a profile inbox, or mobile
-time slots.
+not implement email, reminder-time preferences, a persistent profile inbox, or
+mobile time slots.
 
 ### Before submitting
 
 - [ ] Run PostgreSQL migration and active-episode constraint tests.
 - [ ] Test local-midnight boundaries, idempotency, and consecutive misses.
-- [ ] Test completion, manual resolution, opt-out, and re-opt-in resets.
+- [ ] Test completion, opt-out, and re-opt-in resets.
 - [ ] Test dashboard authorization and CSRF.
 - [ ] Test profile-digest dismissal and reappearance after a new missed skill.
 - [ ] Confirm no email backend, network request, or recurring job is added.
@@ -63,7 +63,7 @@ profile reminder opt-in + timezone     user-skill expected-date evaluator
                                  |
                  +---------------+---------------+
                  v                               v
-  dashboard missed icon/manual resolve    profile missed-skills digest
+    dashboard missed icon/completion      profile missed-skills digest
                                               + dismissal marker
 ```
 
@@ -77,21 +77,19 @@ profile reminder opt-in + timezone     user-skill expected-date evaluator
   maintains consecutive misses, closes states for opted-out users, and records
   the episode's missed-state facts.
 - Add service/model tests for opt-in boundaries, local midnight, completion,
-  resolution, and consecutive-miss counting.
+  and consecutive-miss counting.
 
 **Done when:** migration, model, and service tests pass without dashboard,
 email, or background-job changes.
 
-### Merge 2: Dashboard missed indicator and resolution
+### Merge 2: Dashboard missed indicator and completion
 
 - Reconcile the signed-in user's active skills through the domain boundary.
 - Render an accessible missed icon on each active skill with an active episode.
-- Add a CSRF-protected, owner-only action to resolve one skill's active missed
-  episode.
 - Ensure normal completion also closes the relevant active episode.
 
 **Done when:** view tests prove current-user ownership and state transitions;
-a browser check shows an icon, resolves it, and confirms it disappears.
+a browser check shows an icon, completes its skill, and confirms it disappears.
 
 ### Merge 3: Profile digest and dismissal
 
@@ -99,12 +97,14 @@ a browser check shows an icon, resolves it, and confirms it disappears.
 - Add a CSRF-protected, owner-only dismissal action that changes only the
   digest's visibility.
 - Keep dashboard icons visible after digest dismissal.
+- Update a visible digest as its listed skills are completed; remove it when no
+  missed skills remain.
 - Make the digest visible again when a later missed episode begins, with all
   active missed skills in its content.
 
-**Done when:** view and browser tests prove dismissal does not resolve a skill,
-the digest remains hidden without a new missed episode, and a new missed skill
-makes it reappear.
+**Done when:** view and browser tests prove dismissal does not affect icons,
+the digest updates after completion, remains hidden without a new missed
+episode, and a new missed skill makes it reappear.
 
 ## Risks and mitigations
 
