@@ -6,6 +6,8 @@
 #
 asgiref==3.12.1
     # via django
+certifi==2026.10.19
+    # via -r requirements.runtime.in
 django==5.2.17
     # via -r requirements.runtime.in
 gunicorn==26.2.0
