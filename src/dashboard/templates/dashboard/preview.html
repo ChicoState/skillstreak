@@ -36,8 +36,8 @@
             {% if cards %}
             <div class="skill-grid">
               {% for card in cards %}
-              <article class="skill-card">
-                <div class="skill-card-heading"><div class="skill-icon running" aria-hidden="true">✓</div><div><h3>{{ card.user_skill.skill.name }}</h3>{% if card.user_skill.skill.description %}<p>{{ card.user_skill.skill.description }}</p>{% endif %}</div></div>
+              <article class="skill-card{% if card.is_missed %} skill-card-missed{% endif %}">
+                <div class="skill-card-heading"><div class="skill-icon{% if card.is_missed %} missed" role="img" aria-label="Missed scheduled skill" title="Missed scheduled skill">!{% else %} running" aria-hidden="true">✓{% endif %}</div><div><h3>{{ card.user_skill.skill.name }}</h3>{% if card.user_skill.skill.description %}<p>{{ card.user_skill.skill.description }}</p>{% endif %}</div></div>
                 <div class="card-divider"></div>
                 <div class="skill-details"><div><span class="detail-label">Progress</span><strong{% if card.goal_met %} class="goal-met"{% endif %}>{{ card.progress_text }}</strong></div><div class="week" aria-label="{{ card.user_skill.skill.name }} activity this week">{% for day in card.days %}<span{% if day.complete %} class="done"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"D"|slice:":1" }}</span>{% endfor %}</div></div>
                 <form method="post" action="{% url 'toggle-completion' card.user_skill.id %}">{% csrf_token %}<button class="completion-button{% if card.today_completed %} complete{% endif %}" type="submit">{% if card.today_completed %}Completed today — undo{% else %}Mark complete today{% endif %}</button></form>

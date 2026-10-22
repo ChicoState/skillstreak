@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import CustomSkillForm
-from .models import DailyCompletion, Skill, UserSkill, UserSkillSchedule
+from .models import DailyCompletion, MissedSkillEpisode, Skill, UserSkill, UserSkillSchedule
 
 
 @login_required
@@ -76,9 +76,15 @@ def toggle_selection(request: HttpRequest, skill_id: int) -> HttpResponse:
 @require_POST
 def toggle_completion(request: HttpRequest, user_skill_id: int) -> HttpResponse:
     user_skill = get_object_or_404(UserSkill, pk=user_skill_id, user=request.user, is_active=True)
-    completion, created = DailyCompletion.objects.get_or_create(
-        user_skill=user_skill, completed_on=timezone.localdate()
-    )
-    if not created:
-        completion.delete()
+    with transaction.atomic():
+        completion, created = DailyCompletion.objects.get_or_create(
+            user_skill=user_skill, completed_on=timezone.localdate()
+        )
+        if created:
+            MissedSkillEpisode.objects.filter(
+                user_skill=user_skill,
+                closed_at__isnull=True,
+            ).update(closed_at=timezone.now())
+        else:
+            completion.delete()
     return redirect("dashboard-preview")
