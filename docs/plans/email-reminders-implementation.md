@@ -76,7 +76,7 @@ profile master opt-in + timezone     in-app per-skill missed episodes
 
 **Done when:** a user can select in-app only, email only, or both; policy tests
 cover the three-miss threshold, cadence, timezone, opt-out, completion, and
-manual resolution without sending an email.
+without sending an email.
 
 ### Merge 2: Provider-neutral, idempotent delivery
 

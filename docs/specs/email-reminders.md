@@ -32,8 +32,8 @@ as part of provider submission so retries cannot create duplicate messages.
 
 After three consecutive missed scheduled periods, the existing escalation
 cadence is email-specific: every other calendar day three times, weekly three
-times, then one final reminder one month later. A new completion, manual
-resolution, or global opt-out immediately makes that skill ineligible.
+times, then one final reminder one month later. Completing the skill or
+turning off the global reminder preference immediately makes it ineligible.
 
 ### Alternatives considered
 
@@ -74,7 +74,7 @@ custom skills, or password-reset flows.
       reminder choices under the master opt-in.
 - [ ] Confirm at most one email is attempted per user and eligible date.
 - [ ] Confirm digest and simple modes contain the intended content only.
-- [ ] Confirm opt-out, completion, and manual resolution suppress future sends.
+- [ ] Confirm opt-out and completion suppress future sends.
 - [ ] Confirm retries and provider failures cannot duplicate an email.
 
 ## Data contract
@@ -99,8 +99,7 @@ data.
   individual skills.
 - The user's local timezone and configured reminder time determine when a due
   email is considered for delivery.
-- Global opt-out, completion, and manual resolution prevent future sends for
-  the affected episode.
+- Global opt-out and completion prevent future sends for the affected episode.
 - Provider failures are observable and safely retryable without duplicate mail.
 
 ## Verification

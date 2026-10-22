@@ -1,12 +1,20 @@
 """Selected-skill dashboard behavior for registered team accounts."""
 
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
-from tracking.models import DailyCompletion, Skill, UserSkill
+from tracking.models import (
+    DailyCompletion,
+    MissedSkillEpisode,
+    Skill,
+    UserPreference,
+    UserSkill,
+)
 
 
 @pytest.fixture
@@ -134,3 +142,71 @@ def test_dashboard_omits_the_secondary_line_when_a_skill_has_no_description(clie
     content = response.content.decode()
     assert "<h3>Private Skill</h3></div>" in content
     assert "<h3>Private Skill</h3><p" not in content
+
+
+@pytest.mark.django_db
+def test_dashboard_marks_an_active_missed_skill_when_reminders_are_enabled(
+    client, user, system_skill
+) -> None:
+    user_skill = UserSkill.objects.create(
+        user=user, skill=system_skill, started_on=timezone.localdate()
+    )
+    UserPreference.objects.create(user=user, reminders_enabled=True)
+    MissedSkillEpisode.objects.create(
+        user_skill=user_skill,
+        first_missed_on=timezone.localdate() - timedelta(days=1),
+        last_missed_on=timezone.localdate() - timedelta(days=1),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard-preview"))
+
+    assert response.context["cards"][0]["is_missed"] is True
+    content = response.content.decode()
+    assert 'class="skill-icon missed"' in content
+    assert 'aria-label="Missed scheduled skill"' in content
+
+
+@pytest.mark.django_db
+def test_dashboard_hides_missed_indicator_when_reminders_are_disabled(
+    client, user, system_skill
+) -> None:
+    user_skill = UserSkill.objects.create(
+        user=user, skill=system_skill, started_on=timezone.localdate()
+    )
+    UserPreference.objects.create(user=user, reminders_enabled=False)
+    MissedSkillEpisode.objects.create(
+        user_skill=user_skill,
+        first_missed_on=timezone.localdate() - timedelta(days=1),
+        last_missed_on=timezone.localdate() - timedelta(days=1),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard-preview"))
+
+    assert response.context["cards"][0]["is_missed"] is False
+    content = response.content.decode()
+    assert 'class="skill-icon missed"' not in content
+    assert 'aria-label="Missed scheduled skill"' not in content
+
+
+@pytest.mark.django_db
+def test_completing_a_missed_skill_closes_its_active_episode(client, user, system_skill) -> None:
+    user_skill = UserSkill.objects.create(
+        user=user, skill=system_skill, started_on=timezone.localdate()
+    )
+    UserPreference.objects.create(user=user, reminders_enabled=True)
+    episode = MissedSkillEpisode.objects.create(
+        user_skill=user_skill,
+        first_missed_on=timezone.localdate() - timedelta(days=1),
+        last_missed_on=timezone.localdate() - timedelta(days=1),
+    )
+    client.force_login(user)
+
+    response = client.post(reverse("toggle-completion", args=[user_skill.id]))
+
+    episode.refresh_from_db()
+    dashboard = client.get(reverse("dashboard-preview"))
+    assert response.status_code == 302
+    assert episode.closed_at is not None
+    assert dashboard.context["cards"][0]["is_missed"] is False
