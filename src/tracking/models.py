@@ -33,6 +33,7 @@ class Skill(models.Model):
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    tags = models.ManyToManyField("Tag", through="SkillTag", related_name="skills")
 
     class Meta:
         db_table = "skills"
@@ -40,6 +41,50 @@ class Skill(models.Model):
             models.CheckConstraint(condition=~Q(slug=""), name="skills_nonempty_slug"),
             models.CheckConstraint(condition=~Q(name=""), name="skills_nonempty_name"),
         ]
+
+
+class Tag(models.Model):
+    """A curated, reusable category for system and personal skills."""
+
+    slug = models.CharField(max_length=48, unique=True)
+    name = models.CharField(max_length=48, unique=True)
+
+    class Meta:
+        db_table = "tags"
+        ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(condition=~Q(slug=""), name="tags_nonempty_slug"),
+            models.CheckConstraint(condition=~Q(name=""), name="tags_nonempty_name"),
+        ]
+
+
+class TagAlias(models.Model):
+    """A searchable synonym for one curated tag."""
+
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    term = models.CharField(max_length=48)
+
+    class Meta:
+        db_table = "tag_aliases"
+        constraints = [
+            models.UniqueConstraint(fields=["tag", "term"], name="tag_aliases_tag_term_unique"),
+            models.CheckConstraint(condition=~Q(term=""), name="tag_aliases_nonempty_term"),
+        ]
+        indexes = [models.Index(fields=["term"], name="tag_aliases_term_idx")]
+
+
+class SkillTag(models.Model):
+    """A many-to-many assignment from a skill to a curated tag."""
+
+    skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "skill_tags"
+        constraints = [
+            models.UniqueConstraint(fields=["skill", "tag"], name="skill_tags_skill_tag_unique")
+        ]
+        indexes = [models.Index(fields=["tag", "skill"], name="skill_tags_tag_skill_idx")]
 
 
 class MetricDefinition(models.Model):

@@ -3,3 +3,4 @@
 Django==6.1.2
 gunicorn==26.2.0
 psycopg==3.3.6
+certifi==2026.10.19

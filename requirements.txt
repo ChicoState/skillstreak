@@ -4,13 +4,13 @@
 #
 #    pip-compile --output-file=requirements.txt --strip-extras requirements.in
 #
-asgiref==3.12.1
+asgiref==3.13.0
     # via django
 build==1.6.1
     # via pip-tools
 click==8.5.0
     # via pip-tools
-coverage==7.16.2
+coverage==7.17.0
     # via pytest-cov
 django==6.1.2
     # via -r requirements.in
@@ -27,7 +27,7 @@ packaging==26.3
     #   wheel
 pip-tools==7.6.2
     # via -r requirements.in
-playwright==1.64.0
+playwright==1.64.1
     # via -r requirements.in
 pluggy==1.7.0
     # via
