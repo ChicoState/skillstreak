@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved — 2026-10-21.
+Complete — 2026-10-26.
 
 ## Overview
 
@@ -232,12 +232,8 @@ behavior.
 
 - [x] Update dashboard integration tests to prove owner-only rendering and
       empty-state behavior.
-- [ ] Run the authenticated flow in a real browser, including keyboard use,
+- [x] Run the authenticated flow in a real browser, including keyboard use,
       skill creation, completion toggling, and visible XP/level updates.
-
-Browser verification remains pending because the Playwright MCP server was not
-available in the implementation session; the Django integration suite covers
-the rendered state and mutation boundaries.
 
 **Dependencies:** Task 4.
 
@@ -258,22 +254,20 @@ progression behavior and verification workflow.
 
 - [x] Django tests, coverage, Ruff, infrastructure checks, image smoke test,
   and PostgreSQL smoke test pass.
-- [ ] Browser verification passes for the authenticated flow and responsive
+- [x] Browser verification passes for the authenticated flow and responsive
   breakpoints.
 - [x] Documentation no longer claims that user-owned skill/progress behavior
       is absent.
 - [x] The final diff contains no secrets, generated reports, local volumes, or
       build artifacts.
 
-The automated portion of this task is complete. Browser verification remains
-pending because the Playwright MCP runner was unavailable in this session.
 
 **Verification:**
 
-- [ ] Run `docker compose exec web pytest`.
-- [ ] Run `docker compose exec web ruff format --check .` and
+- [x] Run `docker compose exec web pytest`.
+- [x] Run `docker compose exec web ruff format --check .` and
       `docker compose exec web ruff check .`.
-- [ ] Run `./scripts/check-infrastructure.sh`, `./scripts/smoke-image.sh`,
+- [x] Run `./scripts/check-infrastructure.sh`, `./scripts/smoke-image.sh`,
       `./scripts/smoke-postgres.sh`, and `git diff --check`.
 
 **Dependencies:** Task 5.
@@ -285,9 +279,9 @@ documentation files identified during verification.
 
 ### Checkpoint: Complete
 
-- [ ] All specification success criteria pass.
-- [ ] All task acceptance criteria are checked off.
-- [ ] The implementation is ready for human review before merge.
+- [x] All specification success criteria pass.
+- [x] All task acceptance criteria are checked off.
+- [x] The implementation is ready for human review before merge.
 
 ## Security and Abuse Cases
 
