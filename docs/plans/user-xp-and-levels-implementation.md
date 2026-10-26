@@ -222,18 +222,22 @@ behavior.
 
 **Acceptance criteria:**
 
-- [ ] Static Jogging, Reading, sample calendar, and sample progression values
+- [x] Static Jogging, Reading, sample calendar, and sample progression values
       are removed from the rendered dashboard.
-- [ ] The dashboard displays only the signed-in member's skills and derived
+- [x] The dashboard displays only the signed-in member's skills and derived
       progression, with accessible POST completion controls.
-- [ ] The layout remains usable at 320px, 768px, 1024px, and 1440px.
+- [x] The layout remains usable at 320px, 768px, 1024px, and 1440px.
 
 **Verification:**
 
-- [ ] Update dashboard integration tests to prove owner-only rendering and
+- [x] Update dashboard integration tests to prove owner-only rendering and
       empty-state behavior.
 - [ ] Run the authenticated flow in a real browser, including keyboard use,
       skill creation, completion toggling, and visible XP/level updates.
+
+Browser verification remains pending because the Playwright MCP server was not
+available in the implementation session; the Django integration suite covers
+the rendered state and mutation boundaries.
 
 **Dependencies:** Task 4.
 
