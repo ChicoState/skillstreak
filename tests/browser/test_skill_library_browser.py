@@ -189,7 +189,7 @@ def test_member_can_see_a_missed_indicator_on_an_active_skill_in_the_browser(liv
         card = page.locator(".landing-skill-card", has_text="Missed browser skill")
         expect(card.get_by_role("img", name="Missed scheduled skill")).to_be_visible()
         expect(card.locator(".skill-reminder-icon")).to_have_text("!")
-        card.get_by_role("button", name="Mark complete today").click()
+        card.get_by_role("button", name="Mark Missed browser skill complete today").click()
         expect(card.get_by_role("img", name="Missed scheduled skill")).not_to_be_visible()
         browser.close()
 
@@ -232,5 +232,6 @@ def test_member_can_dismiss_the_profile_missed_skills_digest_in_the_browser(live
         page.get_by_role("button", name="Dismiss reminder").click()
         expect(page.get_by_role("heading", name="Missed skills")).not_to_be_visible()
         page.goto(f"{live_server.url}/")
-        expect(page.get_by_role("img", name="Missed scheduled skill")).to_be_visible()
+        card = page.locator(".landing-skill-card", has_text="Digest browser skill")
+        expect(card.get_by_role("img", name="Missed scheduled skill")).to_be_visible()
         browser.close()
