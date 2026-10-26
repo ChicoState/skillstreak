@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements.runtime.txt --strip-extras requirements.runtime.in
 #
-asgiref==3.12.1
+asgiref==3.13.0
     # via django
 certifi==2026.10.19
     # via -r requirements.runtime.in

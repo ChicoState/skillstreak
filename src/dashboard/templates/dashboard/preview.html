@@ -6,20 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SkillStreak</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <script src="{% static 'dashboard/library.js' %}" defer></script>
   </head>
-  <body>
+  <body data-theme="{{ theme }}">
     <main class="preview">
       <section class="dashboard" aria-labelledby="dashboard-title">
         <aside class="sidebar" aria-label="Primary navigation">
           <a class="brand" href="#skills" aria-label="SkillStreak dashboard"><span class="brand-mark" aria-hidden="true">S</span><span>SkillStreak</span></a>
-          <nav><a class="nav-item active" href="#skills" aria-current="page"><span aria-hidden="true">◌</span> Dashboard</a><span class="nav-item unavailable"><span aria-hidden="true">◎</span> Social <small>Soon</small></span></nav>
+          <nav class="primary-nav">
+            <a class="nav-item{% if active_view == 'dashboard' %} active{% endif %}" href="{% url 'dashboard-preview' %}#skills"{% if active_view == 'dashboard' %} aria-current="page"{% endif %}><span aria-hidden="true">◌</span> Dashboard</a>
+            {% if active_view == "dashboard" %}
+              <div class="dashboard-skill-nav">
+                <div class="dashboard-skill-nav-heading"><span>Your skills</span><a href="{% url 'dashboard-preview' %}?view=library{% if selected_user_skill %}&amp;skill={{ selected_user_skill.id }}{% endif %}">Browse</a></div>
+                {% if active_skills %}
+                  <ul class="dashboard-skill-list" aria-label="Selected skills">
+                    {% for user_skill in active_skills %}
+                      <li><a href="{% url 'dashboard-preview' %}?skill={{ user_skill.id }}#skills"{% if selected_card and selected_card.user_skill.id == user_skill.id %} class="selected" aria-current="page"{% endif %}>{% if user_skill.id in active_missed_skill_ids %}<span class="skill-nav-reminder" role="img" aria-label="Missed scheduled skill" title="Missed scheduled skill">!</span>{% endif %}{{ user_skill.skill.name }}</a></li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <p class="dashboard-skill-empty">Add a skill to begin.</p>
+                {% endif %}
+              </div>
+            {% endif %}
+            <a class="nav-item{% if active_view == 'library' %} active{% endif %}" href="{% url 'dashboard-preview' %}?view=library{% if selected_user_skill %}&amp;skill={{ selected_user_skill.id }}{% endif %}"{% if active_view == 'library' %} aria-current="page"{% endif %}><span aria-hidden="true">⌕</span> Skill library</a>
+            <span class="nav-item unavailable"><span aria-hidden="true">◎</span> Social <small>Soon</small></span>
+          </nav>
           <p class="sidebar-footer">Your progress,<br>one day at a time.</p>
         </aside>
         <div class="dashboard-content">
           <header class="dashboard-header">
             <div>
               <p class="eyebrow">{{ today|date:"l, F j" }}</p>
-              <h1 id="dashboard-title">Welcome back, {{ user.email }}.</h1>
+              <h1 id="dashboard-title">{% if selected_card %}{{ selected_card.user_skill.skill.name }}{% elif active_view == "library" %}Skill library{% else %}Your skills{% endif %}</h1>
             </div>
             <details class="profile-menu">
               <summary class="profile"><span aria-hidden="true">{{ user.email|slice:":1"|upper }}</span><span>{{ user.email }}</span></summary>
@@ -30,38 +49,61 @@
               </div>
             </details>
           </header>
-          <section class="overview" aria-labelledby="overview-title"><div><p class="eyebrow">Today’s focus</p><h2 id="overview-title">Small steps, strong momentum.</h2></div><p class="overview-progress"><strong>{{ cards|length }}</strong> active skill{{ cards|length|pluralize }}</p></section>
+          {% if active_view == "dashboard" %}
           <section id="skills" class="skills-section" aria-labelledby="skills-title">
-            <div class="section-heading"><div><p class="eyebrow">Your routine</p><h2 id="skills-title">Your skills</h2></div><a class="skills-add-skill library-button" href="{% url 'create-custom-skill' %}">Add skill</a></div>
-            {% if cards %}
-            <div class="skill-grid">
-              {% for card in cards %}
-              <article class="skill-card{% if card.is_missed %} skill-card-missed{% endif %}">
-                <div class="skill-card-heading"><div class="skill-icon{% if card.is_missed %} missed" role="img" aria-label="Missed scheduled skill" title="Missed scheduled skill">!{% else %} running" aria-hidden="true">✓{% endif %}</div><div><h3>{{ card.user_skill.skill.name }}</h3>{% if card.user_skill.skill.description %}<p>{{ card.user_skill.skill.description }}</p>{% endif %}</div></div>
-                <div class="card-divider"></div>
-                <div class="skill-details"><div><span class="detail-label">Progress</span><strong{% if card.goal_met %} class="goal-met"{% endif %}>{{ card.progress_text }}</strong></div><div class="week" aria-label="{{ card.user_skill.skill.name }} activity this week">{% for day in card.days %}<span{% if day.complete %} class="done"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"D"|slice:":1" }}</span>{% endfor %}</div></div>
+            {% if selected_card %}
+              {% with card=selected_card %}
+              <article class="skill-detail">
+                <div class="detail-heading"><div><p class="eyebrow">Your active skill</p><h2>{{ card.user_skill.skill.name }}</h2>{% if card.is_missed %}<p class="reminder-status" role="status"><span aria-hidden="true">!</span> Missed check-in</p>{% endif %}{% if card.user_skill.skill.description %}<p class="detail-description">{{ card.user_skill.skill.description }}</p>{% endif %}</div><a class="detail-back" href="{% url 'dashboard-preview' %}#skills">All skills</a></div>
+                <div class="detail-summary"><div><span class="detail-label">Frequency</span><strong>{{ card.frequency }}</strong></div><div><span class="detail-label">{{ card.deadline_label }}</span><strong>{{ card.deadline_date|date:"l, F j" }}</strong></div><div><span class="detail-label">Progress</span><strong{% if card.goal_met %} class="goal-met"{% endif %}>{{ card.progress_text }}</strong></div></div>
+                <section class="detail-week" aria-labelledby="week-title"><div class="detail-section-heading"><div><p class="eyebrow">This week</p><h2 id="week-title">Your check-ins</h2></div><div class="week" aria-label="{{ card.user_skill.skill.name }} activity this week">{% for day in card.days %}<span{% if day.complete %} class="done"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"D"|slice:":1" }}</span>{% endfor %}</div></div></section>
+                <section class="detail-calendar" aria-labelledby="calendar-title"><div class="detail-section-heading"><div><p class="eyebrow">This month</p><h2 id="calendar-title">Completion history</h2></div><span class="calendar-legend"><i aria-hidden="true"></i> Completed</span></div><div class="calendar" role="grid" aria-label="{{ today|date:'F Y' }} completion history"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>{% for week in card.calendar_weeks %}{% for day in week %}{% if day.date %}<b{% if day.complete %} class="complete"{% elif day.future %} class="future"{% elif day.unavailable %} class="unavailable"{% elif day.today %} class="today"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"j" }}</b>{% else %}<span class="calendar-empty" aria-hidden="true"></span>{% endif %}{% endfor %}{% endfor %}</div></section>
                 <form method="post" action="{% url 'toggle-completion' card.user_skill.id %}">{% csrf_token %}<button class="completion-button{% if card.today_completed %} complete{% endif %}" type="submit">{% if card.today_completed %}Completed today — undo{% else %}Mark complete today{% endif %}</button></form>
               </article>
-              {% endfor %}
-            </div>
-            {% else %}<p class="empty-state">Choose a skill below to begin tracking it.</p>{% endif %}
+              {% endwith %}
+            {% else %}
+              <div class="section-heading"><div><p class="eyebrow">Dashboard</p><h2 id="skills-title">All your skills</h2></div><a class="skills-add-skill library-button" href="{% url 'dashboard-preview' %}?view=library">Browse skills</a></div>
+              {% if landing_cards %}<div class="landing-skill-grid" role="list">{% for card in landing_cards %}<article class="landing-skill-card{% if card.is_missed %} landing-skill-card-missed{% endif %}" role="listitem"><div><h3>{% if card.is_missed %}<span class="skill-reminder-icon" role="img" aria-label="Missed scheduled skill" title="Missed scheduled skill">!</span>{% endif %}{{ card.user_skill.skill.name }}</h3>{% if card.user_skill.skill.description %}<p>{{ card.user_skill.skill.description }}</p>{% endif %}</div><div class="landing-skill-footer"><form method="post" action="{% url 'toggle-completion' card.user_skill.id %}">{% csrf_token %}<input type="hidden" name="return_view" value="dashboard"><button class="landing-completion-button{% if card.today_completed %} complete{% endif %}" type="submit" aria-label="{% if card.today_completed %}Undo {{ card.user_skill.skill.name }} completion for today{% else %}Mark {{ card.user_skill.skill.name }} complete today{% endif %}">{% if card.today_completed %}Completed today — undo{% else %}Mark complete{% endif %}</button></form><a href="{% url 'dashboard-preview' %}?skill={{ card.user_skill.id }}#skills">View details</a></div></article>{% endfor %}</div>{% else %}<p class="empty-state">Add a skill from the Skill library to begin tracking it.</p>{% endif %}
+            {% endif %}
           </section>
+          {% else %}
           <section class="library-section" aria-labelledby="library-title">
-            <div class="section-heading"><div><p class="eyebrow">Build your routine</p><h2 id="library-title">Skill library</h2></div></div>
-            <form class="library-search" method="get" role="search">
+            <div class="section-heading"><div><p class="eyebrow">Build your routine</p><h2 id="library-title">Skill library</h2></div><a class="skills-add-skill library-button" href="{% url 'create-custom-skill' %}">Add skill</a></div>
+            <form class="library-search" method="get" role="search" data-library-search>
               <label for="library-query">Find a skill</label>
-              <input id="library-query" name="q" type="search" value="{{ library_query }}" placeholder="Search skills">
-              <button class="library-search-button" type="submit">Search</button>
+              <input type="hidden" name="view" value="library">
+              {% if selected_user_skill %}<input type="hidden" name="skill" value="{{ selected_user_skill.id }}">{% endif %}
+              <div class="library-search-controls">
+                <input id="library-query" name="q" type="search" value="{{ library_query }}" placeholder="Search skills" maxlength="100" autocomplete="off">
+                <label class="library-filter-label" for="library-tag">Tag</label>
+                <select id="library-tag" name="tag" data-library-tag>
+                  <option value="">All tags</option>
+                  {% for tag in library_tags %}<option value="{{ tag.slug }}"{% if library_tag == tag.slug %} selected{% endif %}>{{ tag.name }}</option>{% endfor %}
+                </select>
+                <button class="library-clear-button" type="button" data-library-clear hidden>Clear search</button>
+                <button class="library-search-button" type="submit">Search</button>
+              </div>
+              <p class="library-result-summary" id="library-search-status" data-library-status role="status" aria-live="polite"></p>
             </form>
-            {% if library_query %}<p class="library-result-summary">Showing skills matching “{{ library_query }}”. <a href="{% url 'dashboard-preview' %}">Clear search</a></p>{% endif %}
-            {% if library %}
-            <div class="library-grid">
-              {% for skill in library %}
-              <article class="library-card"><div><h3>{{ skill.name }}</h3><p>{{ skill.description }}</p></div><form method="post" action="{% url 'toggle-selection' skill.id %}">{% csrf_token %}<button class="library-button{% if skill.id in active_skill_ids %} selected{% endif %}" type="submit">{% if skill.id in active_skill_ids %}Remove{% else %}Add skill{% endif %}</button></form></article>
-              {% endfor %}
-            </div>
-            {% else %}<p class="empty-state">No skills match your search.</p>{% endif %}
+            <div class="library-list library-enhanced" data-library-browser role="list">{% for skill in library %}<article class="library-card" data-library-item data-library-tags="{% for link in skill.prefetched_tag_links %}{{ link.tag.slug }} {% endfor %}" role="listitem"><div data-library-search-text><div class="library-card-title"><h3>{{ skill.name }}</h3>{% if skill.visibility == "PRIVATE" %}<span class="library-badge">My skill</span>{% endif %}{% for link in skill.prefetched_tag_links %}<span class="library-badge">{{ link.tag.name }}</span>{% endfor %}</div>{% if skill.description %}<p>{{ skill.description }}</p>{% endif %}{% for link in skill.prefetched_tag_links %}<span class="visually-hidden" aria-hidden="true">{% for alias in link.tag.prefetched_aliases %} {{ alias.term }}{% endfor %}</span>{% endfor %}</div><form method="post" action="{% url 'toggle-selection' skill.id %}">{% csrf_token %}<input type="hidden" name="return_view" value="library"><input type="hidden" name="q" value="{{ library_query }}" data-library-query><input type="hidden" name="tag" value="{{ library_tag }}" data-library-tag-input>{% if selected_user_skill %}<input type="hidden" name="skill" value="{{ selected_user_skill.id }}">{% endif %}<button class="library-button{% if skill.id in active_skill_ids %} selected{% endif %}" type="submit">{% if skill.id in active_skill_ids %}Remove{% else %}Add skill{% endif %}</button></form></article>{% endfor %}</div>
+            <p class="empty-state" data-library-empty hidden>No skills match your search.</p>
+            <noscript>
+              <style>.library-enhanced { display: none; }</style>
+              {% if library_query or library_tag %}
+                <p class="library-result-summary">{{ library_results|length }} skill{{ library_results|length|pluralize }} found. <a href="{% url 'dashboard-preview' %}?view=library">Clear search</a></p>
+                {% if library_results %}
+                  <div class="library-list" aria-label="Skill search results">
+                    {% for skill in library_results %}
+                      <article class="library-card"><div><div class="library-card-title"><h3>{{ skill.name }}</h3>{% if skill.visibility == "PRIVATE" %}<span class="library-badge">My skill</span>{% endif %}</div>{% if skill.description %}<p>{{ skill.description }}</p>{% endif %}</div><form method="post" action="{% url 'toggle-selection' skill.id %}">{% csrf_token %}<input type="hidden" name="return_view" value="library"><input type="hidden" name="q" value="{{ library_query }}"><input type="hidden" name="tag" value="{{ library_tag }}">{% if selected_user_skill %}<input type="hidden" name="skill" value="{{ selected_user_skill.id }}">{% endif %}<button class="library-button{% if skill.id in active_skill_ids %} selected{% endif %}" type="submit">{% if skill.id in active_skill_ids %}Remove{% else %}Add skill{% endif %}</button></form></article>
+                    {% endfor %}
+                  </div>
+                {% else %}<p class="empty-state">No skills match your search.</p>{% endif %}
+              {% else %}
+                <p class="library-result-summary">Use the search or a tag filter to narrow the library.</p>
+              {% endif %}
+            </noscript>
           </section>
+          {% endif %}
         </div>
       </section>
     </main>

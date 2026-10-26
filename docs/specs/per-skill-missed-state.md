@@ -79,6 +79,13 @@ escalation, email content choices, configurable reminder time, background
 scheduling infrastructure, persistent notification inboxes beyond this single
 profile message, and mobile occurrence/time-slot reminders.
 
+## Current MVP limit
+
+The application reconciles missed periods when an opted-in member opens the
+dashboard or profile settings. It does not yet run a background scheduler, so
+an icon is created on the member's next signed-in visit rather than pushed at
+midnight while they are away.
+
 ### Before submitting
 
 - [ ] Confirm first-miss icons appear only for opted-in users after midnight.

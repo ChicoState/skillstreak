@@ -1,16 +1,65 @@
 """Protected skill selection, creation, and binary completion actions."""
 
+from urllib.parse import urlencode
 from uuid import uuid4
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import CustomSkillForm
-from .models import DailyCompletion, MissedSkillEpisode, Skill, UserSkill, UserSkillSchedule
+from .library import available_library_skills, normalize_library_query
+from .models import (
+    DailyCompletion,
+    MissedSkillEpisode,
+    Skill,
+    SkillTag,
+    Tag,
+    UserSkill,
+    UserSkillSchedule,
+)
+from .tags import tag_slugs_for_text
+
+
+def redirect_to_preview(
+    request: HttpRequest,
+    selected_user_skill_id: int | None = None,
+    *,
+    return_to_library: bool = False,
+) -> HttpResponse:
+    """Return to a validated dashboard view after a selection change."""
+    parameters: dict[str, str] = {}
+    if return_to_library:
+        parameters["view"] = "library"
+        query = normalize_library_query(request.POST.get("q", ""))
+        tag_slug = request.POST.get("tag", "").strip()[:48]
+        if query:
+            parameters["q"] = query
+        if Tag.objects.filter(slug=tag_slug).exists():
+            parameters["tag"] = tag_slug
+    if selected_user_skill_id is not None:
+        parameters["skill"] = str(selected_user_skill_id)
+    destination = reverse("dashboard-preview")
+    if parameters:
+        destination = f"{destination}?{urlencode(parameters)}"
+    return redirect(destination)
+
+
+def posted_active_user_skill_id(request: HttpRequest) -> int | None:
+    """Return a posted selection only when it is active and belongs to the member."""
+    selected_id = request.POST.get("skill", "")
+    if not selected_id.isdecimal():
+        return None
+    active_selection = (
+        UserSkill.objects.filter(pk=int(selected_id), user=request.user, is_active=True)
+        .only("pk")
+        .first()
+    )
+    return active_selection.pk if active_selection else None
 
 
 @login_required
@@ -27,6 +76,13 @@ def create_custom_skill(request: HttpRequest) -> HttpResponse:
                 visibility=Skill.Visibility.PRIVATE,
                 created_by=request.user,
             )
+            matching_slugs = tag_slugs_for_text(skill.name, skill.description, limit=99)
+            tags_by_slug = Tag.objects.in_bulk(matching_slugs, field_name="slug")
+            matching_tag = next(
+                (tags_by_slug[slug] for slug in matching_slugs if slug in tags_by_slug), None
+            )
+            if matching_tag is not None:
+                SkillTag.objects.create(skill=skill, tag=matching_tag)
             user_skill = UserSkill.objects.create(
                 user=request.user,
                 skill=skill,
@@ -51,7 +107,7 @@ def create_custom_skill(request: HttpRequest) -> HttpResponse:
                     target_days_per_month=form.cleaned_data["target_days"],
                 )
             UserSkillSchedule.objects.create(**schedule_data)
-        return redirect("dashboard-preview")
+        return redirect(f"{reverse('dashboard-preview')}?skill={user_skill.id}")
     return render(request, "tracking/create_skill.html", {"form": form})
 
 
@@ -59,7 +115,8 @@ def create_custom_skill(request: HttpRequest) -> HttpResponse:
 @require_POST
 def toggle_selection(request: HttpRequest, skill_id: int) -> HttpResponse:
     skill = get_object_or_404(
-        Skill, pk=skill_id, visibility=Skill.Visibility.SYSTEM, is_active=True
+        available_library_skills(request.user),
+        pk=skill_id,
     )
     user_skill, created = UserSkill.objects.get_or_create(
         user=request.user,
@@ -69,7 +126,13 @@ def toggle_selection(request: HttpRequest, skill_id: int) -> HttpResponse:
     if not created:
         user_skill.is_active = not user_skill.is_active
         user_skill.save(update_fields=["is_active"])
-    return redirect("dashboard-preview")
+    if user_skill.is_active:
+        return redirect_to_preview(request, user_skill.id)
+    return redirect_to_preview(
+        request,
+        posted_active_user_skill_id(request),
+        return_to_library=request.POST.get("return_view") == "library",
+    )
 
 
 @login_required
@@ -87,4 +150,6 @@ def toggle_completion(request: HttpRequest, user_skill_id: int) -> HttpResponse:
             ).update(closed_at=timezone.now())
         else:
             completion.delete()
-    return redirect("dashboard-preview")
+    if request.POST.get("return_view") == "dashboard":
+        return redirect("dashboard-preview")
+    return redirect(f"{reverse('dashboard-preview')}?skill={user_skill.id}")

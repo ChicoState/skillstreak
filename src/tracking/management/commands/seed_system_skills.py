@@ -2,7 +2,8 @@
 
 from django.core.management.base import BaseCommand
 
-from tracking.models import Skill
+from tracking.models import Skill, SkillTag, Tag, TagAlias
+from tracking.tags import TAG_DEFINITIONS, tag_slugs_for_text
 
 SYSTEM_SKILLS = (
     ("exercise", "Exercise", "Complete any exercise activity."),
@@ -133,8 +134,15 @@ class Command(BaseCommand):
     help = "Create the idempotent system skill catalog."
 
     def handle(self, *args, **options) -> None:
+        tags: dict[str, Tag] = {}
+        for slug, name, aliases in TAG_DEFINITIONS:
+            tag, _ = Tag.objects.update_or_create(slug=slug, defaults={"name": name})
+            tags[slug] = tag
+            for term in aliases:
+                TagAlias.objects.get_or_create(tag=tag, term=term)
+
         for slug, name, description in SYSTEM_SKILLS:
-            Skill.objects.update_or_create(
+            skill, _ = Skill.objects.update_or_create(
                 slug=slug,
                 defaults={
                     "name": name,
@@ -142,4 +150,8 @@ class Command(BaseCommand):
                     "visibility": Skill.Visibility.SYSTEM,
                 },
             )
+            tag_slugs = tag_slugs_for_text(name, description)
+            SkillTag.objects.filter(skill=skill).exclude(tag__slug__in=tag_slugs).delete()
+            for tag_slug in tag_slugs:
+                SkillTag.objects.get_or_create(skill=skill, tag=tags[tag_slug])
         self.stdout.write(self.style.SUCCESS("System skills are ready."))

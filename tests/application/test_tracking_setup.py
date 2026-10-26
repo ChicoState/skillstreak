@@ -6,7 +6,7 @@ from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from tracking.models import Skill, UserSkill, UserSkillSchedule
+from tracking.models import Skill, SkillTag, Tag, TagAlias, UserSkill, UserSkillSchedule
 
 
 @pytest.mark.django_db
@@ -41,6 +41,20 @@ def test_system_skill_seed_is_idempotent() -> None:
         skill.visibility == Skill.Visibility.SYSTEM and skill.is_active and skill.description
         for skill in Skill.objects.all()
     )
+
+
+@pytest.mark.django_db
+def test_system_skill_seed_adds_curated_tags_and_aliases() -> None:
+    call_command("seed_system_skills")
+
+    pet_skill = Skill.objects.get(slug="care-for-a-pet")
+
+    assert Tag.objects.filter(slug="pets", name="Pets").exists()
+    assert TagAlias.objects.filter(tag__slug="pets", term="dog").exists()
+    assert SkillTag.objects.filter(skill=pet_skill, tag__slug="pets").exists()
+    assert not Skill.objects.filter(
+        visibility=Skill.Visibility.SYSTEM, skilltag__isnull=True
+    ).exists()
 
 
 @pytest.mark.django_db(transaction=True)
