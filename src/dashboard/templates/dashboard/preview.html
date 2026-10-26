@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SkillStreak preview</title>
+    <title>SkillStreak dashboard</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
   </head>
   <body>
@@ -24,7 +24,7 @@
         <div class="dashboard-content">
           <header class="dashboard-header">
             <div>
-              <p class="eyebrow">Tuesday, March 18</p>
+              <p class="eyebrow">Your personal practice space</p>
               <h1 id="dashboard-title">Good morning, {{ request.user.email }}.</h1>
             </div>
             <div class="profile" aria-label="Signed-in profile">
@@ -38,11 +38,27 @@
 
           <section class="overview" aria-labelledby="overview-title">
             <div>
-              <p class="eyebrow">Today’s focus</p>
-              <h2 id="overview-title">Small steps, strong momentum.</h2>
+              <p class="eyebrow">Your progression</p>
+              <h2 id="overview-title">Level {{ progression.level }}</h2>
+              <div class="progress-track" aria-label="{{ progression.progress_percent }} percent toward the next level">
+                <span style="width: {{ progression.progress_percent }}%"></span>
+              </div>
             </div>
-            <p class="overview-progress"><strong>2</strong> habits on track</p>
+            <p class="overview-progress"><strong>{{ progression.total_xp }} XP</strong>{% if progression.next_level_xp %}{{ progression.next_level_xp }} XP next threshold{% else %}Maximum level{% endif %}</p>
           </section>
+
+          {% if not timezone_configured %}
+            <section class="setup-panel" aria-labelledby="timezone-title">
+              <p class="eyebrow">One quick setup step</p>
+              <h2 id="timezone-title">Set your timezone</h2>
+              <p>We use your local calendar to keep scheduled completions fair and accurate.</p>
+              <form method="post" action="{% url 'account-timezone-sync' %}" id="timezone-form">
+                {% csrf_token %}
+                <input type="hidden" name="timezone" id="timezone-input" value="">
+                <button class="primary-button" type="submit">Use my local timezone</button>
+              </form>
+            </section>
+          {% endif %}
 
           <section id="skills" class="skills-section" aria-labelledby="skills-title">
             <div class="section-heading">
@@ -50,55 +66,58 @@
                 <p class="eyebrow">Your routine</p>
                 <h2 id="skills-title">Your skills</h2>
               </div>
-              <button class="text-button" type="button" disabled title="Adding skills is coming soon">Add skill <span aria-hidden="true">+</span></button>
+              <a class="text-button" href="#create-skill">Add skill <span aria-hidden="true">+</span></a>
             </div>
 
-            <div class="skill-grid">
-              <article class="skill-card">
-                <div class="skill-card-heading">
-                  <div class="skill-icon running" aria-hidden="true">↗</div>
-                  <div><h3>Jogging</h3><p>3 days this week</p></div>
-                  <span class="streak">5 day streak</span>
-                </div>
-                <div class="card-divider"></div>
-                <div class="skill-details">
-                  <div><span class="detail-label">This week</span><strong>3 of 4 days</strong></div>
-                  <div class="week" aria-label="Jogging activity: Monday, Wednesday, and Saturday completed">
-                    <span class="done">M</span><span>T</span><span class="done">W</span><span>T</span><span>F</span><span>S</span><span class="done">S</span>
-                  </div>
-                </div>
-                <p class="card-message">One more run keeps your week on pace.</p>
-              </article>
-
-              <article class="skill-card">
-                <div class="skill-card-heading">
-                  <div class="skill-icon reading" aria-hidden="true">⌁</div>
-                  <div><h3>Reading</h3><p>14 pages today</p></div>
-                  <span class="streak">8 day streak</span>
-                </div>
-                <div class="card-divider"></div>
-                <div class="skill-details">
-                  <div><span class="detail-label">This week</span><strong>4 of 5 days</strong></div>
-                  <div class="week" aria-label="Reading activity: Monday through Thursday completed">
-                    <span class="done">M</span><span class="done">T</span><span class="done">W</span><span class="done">T</span><span>F</span><span>S</span><span>S</span>
-                  </div>
-                </div>
-                <p class="card-message">You’re one session away from your weekly goal.</p>
-              </article>
-            </div>
+            {% if skill_form and skill_form.errors %}<div class="form-error" role="alert">{{ skill_form.errors }}</div>{% endif %}
+            {% if skill_cards %}
+              <div class="skill-grid">
+                {% for card in skill_cards %}
+                  <article class="skill-card">
+                    <div class="skill-card-heading"><div class="skill-icon" aria-hidden="true">✦</div><div><h3>{{ card.skill.name }}</h3><p>Scheduled practice</p></div></div>
+                    <div class="card-divider"></div>
+                    {% if timezone_configured %}
+                      <div class="date-grid" aria-label="{{ card.skill.name }} completion dates">
+                        {% for day in card.days %}
+                          {% if day.scheduled %}
+                            <form method="post" action="{% url 'skill-toggle-completion' card.skill.pk %}">
+                              {% csrf_token %}
+                              <input type="hidden" name="completed_on" value="{{ day.date|date:'Y-m-d' }}">
+                              <button class="date-button{% if day.completed %} completed{% endif %}{% if day.today %} today{% endif %}" type="submit" aria-label="{{ card.skill.name }}: {{ day.date|date:'l, F j' }}{% if day.completed %}, completed{% else %}, mark complete{% endif %}"><span>{{ day.label }}</span><strong>{{ day.day_number }}</strong></button>
+                            </form>
+                          {% else %}<span class="date-button unavailable" aria-hidden="true"><span>{{ day.label }}</span><strong>{{ day.day_number }}</strong></span>{% endif %}
+                        {% endfor %}
+                      </div>
+                    {% else %}<p class="card-message">Set your timezone above to see completion dates.</p>{% endif %}
+                  </article>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty-state" role="status"><h3>No skills yet</h3><p>Create your first routine to start earning XP.</p></div>
+            {% endif %}
           </section>
 
-          <section class="calendar-section" aria-labelledby="calendar-title">
-            <div class="section-heading"><div><p class="eyebrow">A gentle look back</p><h2 id="calendar-title">March activity</h2></div><span class="calendar-legend"><i></i> Completed</span></div>
-            <div class="calendar" role="grid" aria-label="Sample March activity calendar">
-              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-              <b></b><b></b><b class="complete">1</b><b>2</b><b class="complete">3</b><b>4</b><b>5</b>
-              <b class="complete">6</b><b>7</b><b class="complete">8</b><b>9</b><b>10</b><b class="complete">11</b><b>12</b>
-              <b>13</b><b class="complete">14</b><b class="complete">15</b><b>16</b><b class="complete">17</b><b class="today">18</b><b>19</b>
-            </div>
+          <section id="create-skill" class="create-panel" aria-labelledby="create-title">
+            <div class="section-heading"><div><p class="eyebrow">Build your routine</p><h2 id="create-title">Add a skill</h2></div></div>
+            <form method="post" action="{% url 'skill-create' %}" class="skill-form">
+              {% csrf_token %}
+              <label for="skill-name">Skill name</label>
+              <input id="skill-name" name="name" maxlength="100" required value="{% if skill_form %}{{ skill_form.name.value|default:'' }}{% endif %}">
+              <fieldset><legend>Practice days</legend><div class="weekday-options">{% for value, label in skill_form.weekdays.field.choices|default_if_none:'' %}<label><input type="checkbox" name="weekdays" value="{{ value }}"> {{ label|slice:':3' }}</label>{% endfor %}</div></fieldset>
+              <button class="primary-button" type="submit">Create skill</button>
+            </form>
           </section>
         </div>
       </section>
     </main>
+    <script>
+      (() => {
+        const form = document.querySelector("#timezone-form");
+        const input = document.querySelector("#timezone-input");
+        if (form && input) {
+          input.value = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        }
+      })();
+    </script>
   </body>
 </html>

@@ -6,6 +6,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
+from dashboard.views import dashboard_context
+
 from .forms import CompletionForm, SkillForm, TimezoneForm
 from .models import Skill, SkillSchedule
 from .progression import CompletionEligibilityError, TimezoneNotConfigured, toggle_completion
@@ -14,8 +16,10 @@ from .progression import CompletionEligibilityError, TimezoneNotConfigured, togg
 def invalid_dashboard_response(
     request: HttpRequest, context: dict, *, status: int = 400
 ) -> HttpResponse:
-    """Render validation errors without introducing a second feature template."""
-    return render(request, "dashboard/preview.html", context, status=status)
+    """Render validation errors alongside the current dashboard state."""
+    return render(
+        request, "dashboard/preview.html", dashboard_context(request, context), status=status
+    )
 
 
 @login_required
