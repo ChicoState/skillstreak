@@ -55,6 +55,15 @@ skill dashboard at `/`. It is not a production account system.
    docker compose exec web python manage.py seed_system_skills
    ```
 
+   To load repeatable local data for the in-app reminder feature into an
+   existing account, use its sign-in email. The command enables reminders for
+   that account and creates missed Exercise and Read skills plus a completed
+   Meditate skill; rerunning it is safe.
+
+   ```sh
+   docker compose exec web python manage.py seed_reminder_demo --email you@csuchico.edu
+   ```
+
    The application listens on `http://localhost:8000` by default. Set
    `APP_PORT` in `.env` to choose another host port. Run migrations before
    registering an internal `@csuchico.edu` account and accessing the sample
