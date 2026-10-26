@@ -256,12 +256,17 @@ progression behavior and verification workflow.
 
 **Acceptance criteria:**
 
-- [ ] Django tests, coverage, Ruff, infrastructure checks, image smoke test,
-      PostgreSQL smoke test, and browser verification pass.
-- [ ] Documentation no longer claims that user-owned skill/progress behavior
+- [x] Django tests, coverage, Ruff, infrastructure checks, image smoke test,
+  and PostgreSQL smoke test pass.
+- [ ] Browser verification passes for the authenticated flow and responsive
+  breakpoints.
+- [x] Documentation no longer claims that user-owned skill/progress behavior
       is absent.
-- [ ] The final diff contains no secrets, generated reports, local volumes, or
+- [x] The final diff contains no secrets, generated reports, local volumes, or
       build artifacts.
+
+The automated portion of this task is complete. Browser verification remains
+pending because the Playwright MCP runner was unavailable in this session.
 
 **Verification:**
 

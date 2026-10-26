@@ -1,11 +1,9 @@
 # SkillStreak
 
-SkillStreak is planned as a multi-account Django web application with PostgreSQL.
-This repository currently contains its development, quality, Docker, delivery
-foundation, a minimal Django source framework, liveness route, internal
-`@csuchico.edu` account registration/sign-in, and a static sample dashboard at
-`/`. No user-owned skill/progress schema, API, or production deployment exists
-yet.
+SkillStreak is a multi-account Django web application with PostgreSQL. The
+current product slice provides internal `@csuchico.edu` account
+registration/sign-in, private scheduled skills, completion tracking, and
+derived XP/level progression on the dashboard at `/`.
 
 ## Repository map
 
@@ -18,7 +16,7 @@ yet.
 | `tests/application/`, `tests/infrastructure/` | Django framework and infrastructure tests | Ready |
 | `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
 | `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, `manage.py` | Django framework, liveness endpoint, team accounts, and sample dashboard | Ready; no user-owned product behavior |
+| `src/`, `manage.py` | Django framework, liveness endpoint, team accounts, owned skills, progression, and dashboard | Ready for the current product slice |
 | `docs/specs/internal-team-accounts.md` | Approved internal-account scope | Current |
 | `.agents/skills/` | Repository-specific agent guidance | Available |
 
@@ -48,8 +46,7 @@ yet.
 
    The application listens on `http://localhost:8000` by default. Set
    `APP_PORT` in `.env` to choose another host port. Run migrations before
-   registering an internal `@csuchico.edu` account and accessing the sample
-   dashboard:
+   registering an internal `@csuchico.edu` account and accessing the dashboard:
 
    ```sh
    docker compose exec web python manage.py migrate
@@ -89,7 +86,8 @@ endpoint; it does not query PostgreSQL. Cloud Run must supply
 `DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DATABASE_URL`,
 `DJANGO_SECRET_KEY`, and `ALLOWED_HOSTS` through managed configuration and
 secrets. Full Django checks and coverage enforcement now run in pull requests;
-migrations and browser workflows remain future product work.
+migrations remain part of release validation, and browser verification is
+documented as a separate release-validation step.
 
 ## Quality and CI
 
@@ -97,7 +95,9 @@ migrations and browser workflows remain future product work.
 lockfiles. Pull requests verify the development lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
 CodeQL, and an image build with a critical-vulnerability scan. Django system
 checks and the 80% branch-and-line coverage gate now run in pull requests.
-Browser tests remain future product work.
+The application behavior is covered by Django integration tests; real-browser
+verification remains a release-validation step because the local Playwright
+MCP runner is not part of the repository container.
 
 Release tags (`v*`) target Google Cloud Run through Artifact Registry. Before a
 release can run, create the Google Cloud project resources and GitHub production
