@@ -10,8 +10,17 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from tracking.library import available_library_skills, normalize_library_query
-from tracking.models import DailyCompletion, SkillTag, Tag, UserSkill, UserSkillSchedule
+from tracking.models import (
+    DailyCompletion,
+    MissedSkillEpisode,
+    SkillTag,
+    Tag,
+    UserPreference,
+    UserSkill,
+    UserSkillSchedule,
+)
 from tracking.progress import current_goal_progress
+from tracking.reminders import reconcile_missed_skills
 
 
 def current_schedule(user_skill: UserSkill, today):
@@ -80,9 +89,7 @@ def month_calendar(today, started_on, completed_dates: set) -> list[list[dict[st
 @login_required
 def preview(request: HttpRequest) -> HttpResponse:
     """Render the Dashboard landing, selected detail, or Skill library."""
-    active_view = request.GET.get("view")
-    if active_view != "library":
-        active_view = "dashboard"
+    active_view = "library" if request.GET.get("view") == "library" else "dashboard"
     today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())
     active_skills = list(
@@ -90,6 +97,29 @@ def preview(request: HttpRequest) -> HttpResponse:
         .select_related("skill")
         .order_by("skill__name", "pk")
     )
+    preference = (
+        UserPreference.objects.filter(user=request.user)
+        .only(
+            "theme",
+            "reminders_enabled",
+            "timezone",
+            "reminders_started_on",
+            "reminders_checked_through",
+        )
+        .first()
+    )
+    if preference and preference.reminders_enabled:
+        reconcile_missed_skills(preference)
+    theme = preference.theme if preference else UserPreference.Theme.GREEN
+    active_missed_skill_ids = set()
+    if preference and preference.reminders_enabled:
+        active_missed_skill_ids = set(
+            MissedSkillEpisode.objects.filter(
+                user_skill__in=active_skills,
+                closed_at__isnull=True,
+            ).values_list("user_skill_id", flat=True)
+        )
+
     selected_user_skill = None
     selected_id = request.GET.get("skill", "")
     if selected_id.isdecimal():
@@ -112,24 +142,29 @@ def preview(request: HttpRequest) -> HttpResponse:
             completed_on__range=(completion_start, today),
         )
         completed = {item.completed_on for item in completions}
-        days = []
-        for index in range(7):
-            day = week_start + timedelta(days=index)
-            days.append({"date": day, "complete": day in completed})
+        days = [
+            {
+                "date": week_start + timedelta(days=index),
+                "complete": week_start + timedelta(days=index) in completed,
+            }
+            for index in range(7)
+        ]
         goal_progress = current_goal_progress(selected_user_skill, completed, today)
         weekly_count = sum(day["complete"] for day in days)
-        weekly_progress_text = (
-            f"{weekly_count} day{'s' if weekly_count != 1 else ''} completed this week"
-        )
         selected_card = {
             "user_skill": selected_user_skill,
             "days": days,
             "today_completed": today in completed,
-            "progress_text": goal_progress["text"] if goal_progress else weekly_progress_text,
+            "progress_text": (
+                goal_progress["text"]
+                if goal_progress
+                else f"{weekly_count} day{'s' if weekly_count != 1 else ''} completed this week"
+            ),
             "goal_met": (
                 goal_progress is not None and goal_progress["completed"] >= goal_progress["target"]
             ),
             "calendar_weeks": month_calendar(today, selected_user_skill.started_on, completed),
+            "is_missed": selected_user_skill.id in active_missed_skill_ids,
         }
         selected_card.update(
             schedule_details(
@@ -147,9 +182,14 @@ def preview(request: HttpRequest) -> HttpResponse:
             ).values_list("user_skill_id", flat=True)
         )
         landing_cards = [
-            {"user_skill": item, "today_completed": item.id in completed_today}
+            {
+                "user_skill": item,
+                "today_completed": item.id in completed_today,
+                "is_missed": item.id in active_missed_skill_ids,
+            }
             for item in active_skills
         ]
+
     library_query = ""
     library_tag = ""
     library_tags = Tag.objects.none()
@@ -183,10 +223,11 @@ def preview(request: HttpRequest) -> HttpResponse:
             library_results = library
         if library_tag:
             library_results = library_results.filter(tags__slug=library_tag)
-        if library_query or library_tag:
-            library_results = library_results.distinct().order_by("name")
-        else:
-            library_results = library.none()
+        library_results = (
+            library_results.distinct().order_by("name")
+            if library_query or library_tag
+            else library.none()
+        )
         library_tags = Tag.objects.all()
     return render(
         request,
@@ -203,6 +244,8 @@ def preview(request: HttpRequest) -> HttpResponse:
             "library": library,
             "library_results": library_results,
             "today": today,
+            "theme": theme,
+            "active_missed_skill_ids": active_missed_skill_ids,
             "active_skill_ids": {item.skill_id for item in active_skills},
         },
     )

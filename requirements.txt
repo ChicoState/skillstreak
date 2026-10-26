@@ -8,6 +8,8 @@ asgiref==3.13.0
     # via django
 build==1.6.1
     # via pip-tools
+certifi==2026.10.19
+    # via -r requirements.in
 click==8.5.0
     # via pip-tools
 coverage==7.17.0

@@ -7,9 +7,17 @@ from django.db.models import Q
 
 
 class UserPreference(models.Model):
+    class Theme(models.TextChoices):
+        GREEN = "green", "Green"
+        BLUE = "blue", "Blue"
+        PURPLE = "purple", "Purple"
+
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     timezone = models.CharField(max_length=63, default="UTC")
     reminders_enabled = models.BooleanField(default=False)
+    reminders_started_on = models.DateField(null=True, blank=True)
+    reminders_checked_through = models.DateField(null=True, blank=True)
+    theme = models.CharField(max_length=16, choices=Theme.choices, default=Theme.GREEN)
 
     class Meta:
         db_table = "user_preferences"
@@ -164,6 +172,46 @@ class DailyCompletion(models.Model):
                 name="daily_completions_user_skill_date_unique",
             )
         ]
+
+
+class MissedSkillEpisode(models.Model):
+    """An unresolved run of missed expected dates for one selected skill."""
+
+    user_skill = models.ForeignKey(UserSkill, on_delete=models.CASCADE)
+    first_missed_on = models.DateField()
+    last_missed_on = models.DateField()
+    consecutive_misses = models.PositiveSmallIntegerField(default=1)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "missed_skill_episodes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user_skill"],
+                condition=Q(closed_at__isnull=True),
+                name="missed_skill_episode_one_active",
+            ),
+            models.CheckConstraint(
+                condition=Q(consecutive_misses__gte=1),
+                name="missed_skill_episode_count_check",
+            ),
+            models.CheckConstraint(
+                condition=Q(last_missed_on__gte=models.F("first_missed_on")),
+                name="missed_skill_episode_dates_check",
+            ),
+        ]
+
+
+class ProfileReminderDigestDismissal(models.Model):
+    """The latest acknowledgement of a user's profile missed-skills digest."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    dismissed_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "profile_reminder_digest_dismissals"
 
 
 class UserSkillSchedule(models.Model):

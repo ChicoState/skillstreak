@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
     <script src="{% static 'dashboard/library.js' %}" defer></script>
   </head>
-  <body>
+  <body data-theme="{{ theme }}">
     <main class="preview">
       <section class="dashboard" aria-labelledby="dashboard-title">
         <aside class="sidebar" aria-label="Primary navigation">
@@ -21,7 +21,7 @@
                 {% if active_skills %}
                   <ul class="dashboard-skill-list" aria-label="Selected skills">
                     {% for user_skill in active_skills %}
-                      <li><a href="{% url 'dashboard-preview' %}?skill={{ user_skill.id }}#skills"{% if selected_card and selected_card.user_skill.id == user_skill.id %} class="selected" aria-current="page"{% endif %}>{{ user_skill.skill.name }}</a></li>
+                      <li><a href="{% url 'dashboard-preview' %}?skill={{ user_skill.id }}#skills"{% if selected_card and selected_card.user_skill.id == user_skill.id %} class="selected" aria-current="page"{% endif %}>{% if user_skill.id in active_missed_skill_ids %}<span class="skill-nav-reminder" role="img" aria-label="Missed scheduled skill" title="Missed scheduled skill">!</span>{% endif %}{{ user_skill.skill.name }}</a></li>
                     {% endfor %}
                   </ul>
                 {% else %}
@@ -54,7 +54,7 @@
             {% if selected_card %}
               {% with card=selected_card %}
               <article class="skill-detail">
-                <div class="detail-heading"><div><p class="eyebrow">Your active skill</p><h2>{{ card.user_skill.skill.name }}</h2>{% if card.user_skill.skill.description %}<p class="detail-description">{{ card.user_skill.skill.description }}</p>{% endif %}</div><a class="detail-back" href="{% url 'dashboard-preview' %}#skills">All skills</a></div>
+                <div class="detail-heading"><div><p class="eyebrow">Your active skill</p><h2>{{ card.user_skill.skill.name }}</h2>{% if card.is_missed %}<p class="reminder-status" role="status"><span aria-hidden="true">!</span> Missed check-in</p>{% endif %}{% if card.user_skill.skill.description %}<p class="detail-description">{{ card.user_skill.skill.description }}</p>{% endif %}</div><a class="detail-back" href="{% url 'dashboard-preview' %}#skills">All skills</a></div>
                 <div class="detail-summary"><div><span class="detail-label">Frequency</span><strong>{{ card.frequency }}</strong></div><div><span class="detail-label">{{ card.deadline_label }}</span><strong>{{ card.deadline_date|date:"l, F j" }}</strong></div><div><span class="detail-label">Progress</span><strong{% if card.goal_met %} class="goal-met"{% endif %}>{{ card.progress_text }}</strong></div></div>
                 <section class="detail-week" aria-labelledby="week-title"><div class="detail-section-heading"><div><p class="eyebrow">This week</p><h2 id="week-title">Your check-ins</h2></div><div class="week" aria-label="{{ card.user_skill.skill.name }} activity this week">{% for day in card.days %}<span{% if day.complete %} class="done"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"D"|slice:":1" }}</span>{% endfor %}</div></div></section>
                 <section class="detail-calendar" aria-labelledby="calendar-title"><div class="detail-section-heading"><div><p class="eyebrow">This month</p><h2 id="calendar-title">Completion history</h2></div><span class="calendar-legend"><i aria-hidden="true"></i> Completed</span></div><div class="calendar" role="grid" aria-label="{{ today|date:'F Y' }} completion history"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>{% for week in card.calendar_weeks %}{% for day in week %}{% if day.date %}<b{% if day.complete %} class="complete"{% elif day.future %} class="future"{% elif day.unavailable %} class="unavailable"{% elif day.today %} class="today"{% endif %} title="{{ day.date|date:'l, F j' }}">{{ day.date|date:"j" }}</b>{% else %}<span class="calendar-empty" aria-hidden="true"></span>{% endif %}{% endfor %}{% endfor %}</div></section>
@@ -63,7 +63,7 @@
               {% endwith %}
             {% else %}
               <div class="section-heading"><div><p class="eyebrow">Dashboard</p><h2 id="skills-title">All your skills</h2></div><a class="skills-add-skill library-button" href="{% url 'dashboard-preview' %}?view=library">Browse skills</a></div>
-              {% if landing_cards %}<div class="landing-skill-grid" role="list">{% for card in landing_cards %}<article class="landing-skill-card" role="listitem"><div><h3>{{ card.user_skill.skill.name }}</h3>{% if card.user_skill.skill.description %}<p>{{ card.user_skill.skill.description }}</p>{% endif %}</div><div class="landing-skill-footer"><form method="post" action="{% url 'toggle-completion' card.user_skill.id %}">{% csrf_token %}<input type="hidden" name="return_view" value="dashboard"><button class="landing-completion-button{% if card.today_completed %} complete{% endif %}" type="submit" aria-label="{% if card.today_completed %}Undo {{ card.user_skill.skill.name }} completion for today{% else %}Mark {{ card.user_skill.skill.name }} complete today{% endif %}">{% if card.today_completed %}Completed today — undo{% else %}Mark complete{% endif %}</button></form><a href="{% url 'dashboard-preview' %}?skill={{ card.user_skill.id }}#skills">View details</a></div></article>{% endfor %}</div>{% else %}<p class="empty-state">Add a skill from the Skill library to begin tracking it.</p>{% endif %}
+              {% if landing_cards %}<div class="landing-skill-grid" role="list">{% for card in landing_cards %}<article class="landing-skill-card{% if card.is_missed %} landing-skill-card-missed{% endif %}" role="listitem"><div><h3>{% if card.is_missed %}<span class="skill-reminder-icon" role="img" aria-label="Missed scheduled skill" title="Missed scheduled skill">!</span>{% endif %}{{ card.user_skill.skill.name }}</h3>{% if card.user_skill.skill.description %}<p>{{ card.user_skill.skill.description }}</p>{% endif %}</div><div class="landing-skill-footer"><form method="post" action="{% url 'toggle-completion' card.user_skill.id %}">{% csrf_token %}<input type="hidden" name="return_view" value="dashboard"><button class="landing-completion-button{% if card.today_completed %} complete{% endif %}" type="submit" aria-label="{% if card.today_completed %}Undo {{ card.user_skill.skill.name }} completion for today{% else %}Mark {{ card.user_skill.skill.name }} complete today{% endif %}">{% if card.today_completed %}Completed today — undo{% else %}Mark complete{% endif %}</button></form><a href="{% url 'dashboard-preview' %}?skill={{ card.user_skill.id }}#skills">View details</a></div></article>{% endfor %}</div>{% else %}<p class="empty-state">Add a skill from the Skill library to begin tracking it.</p>{% endif %}
             {% endif %}
           </section>
           {% else %}
