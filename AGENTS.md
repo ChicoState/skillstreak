@@ -4,33 +4,31 @@
 
 This repository is at the first account-and-progression slice. Read
 `infrastructure_plan.md` before changing tooling, Docker, CI, dependency, or
-delivery decisions. The currently implemented configuration follows that plan:
-Python 3.14, Django 5.2 LTS, pip-tools, local PostgreSQL in Compose, and planned
+delivery decisions. The implemented configuration follows that plan: Python
+3.14, Django 5.2 LTS, pip-tools, local PostgreSQL in Compose, and planned
 Google Cloud Run delivery through Artifact Registry. The current product slice
-is internal `@csuchico.edu` account registration plus user-owned scheduled
-skills, completions, and derived dashboard progression.
+combines internal `@csuchico.edu` accounts with user-owned scheduled skills,
+completions, derived XP/level progression, and the newer selected-skill tracker.
 
 ## Repository map
 
-- `infrastructure_plan.md`: approved infrastructure plan.
+- `infrastructure_plan.md`: approved infrastructure decisions.
 - `requirements.in`, `requirements.txt`, `requirements.runtime.in`,
   `requirements.runtime.txt`, `pyproject.toml`, `.python-version`: Python
   toolchain and development/runtime lockfiles.
 - `compose.yml`, `Dockerfile`, `.dockerignore`, `.env.example`: Docker infrastructure and safe local configuration template.
 - `scripts/`: infrastructure validation, container-image, and PostgreSQL smoke tests.
-- `tests/infrastructure/`: configuration harness tests only.
+- `tests/application/`, `tests/browser/`, `tests/infrastructure/`: Django, Chromium browser, and infrastructure tests.
 - `.github/workflows/`: `pr-checks.yml` and guarded `release.yml`.
-- `.agents/skills/`: repository-provided skills.
-- `src/accounts/`: email-only internal team accounts and first user migration.
-- `src/dashboard/`: authenticated dashboard presenting account-owned skills
-  and derived progression.
-- `src/skills/`: owned skills, weekly schedules, completions, and progression
-  rules.
-- `docs/specs/internal-team-accounts.md`: approved account scope.
-- `docs/decisions/002-internal-email-accounts.md`: account-authentication
-  rationale.
-- There is no public API; browser verification remains a separate release
-  validation step.
+- `src/accounts/`: email-only internal team accounts and migrations.
+- `src/dashboard/`: authenticated dashboard combining selected skills and account-owned progression.
+- `src/skills/`: owned skills, weekly schedules, completions, and XP/level rules.
+- `src/tracking/`: selected-skill tracking, schedules, reminders, and migrations.
+- `src/profiles/`: profile settings and reminder preferences.
+- `docs/specs/`, `docs/plans/`, `docs/decisions/`: reviewed product scope and decisions.
+
+There is no public API. Production account behavior and deployment remain out
+of scope for this local product slice.
 
 ## Required reading and skill routing
 
@@ -42,30 +40,29 @@ product work; `frontend-ui-engineering` for user-facing UI; and
 `test-driven-development` plus `test-in-browser` / `browser-testing-with-devtools`
 for application behavior and browser verification. Use
 `security-and-hardening`, `documentation-and-adrs`, `ci-cd-and-automation`,
-`code-review-and-quality`, and `git-workflow-and-versioning` when their scopes
-apply.
+`code-review-and-quality`, and `git-workflow-and-versioning` when their scopes apply.
 
 ## Boundaries
 
 - During infrastructure work, do not create unrelated Django apps, pages,
-  routes, models, domain schemas, authentication flows, business logic, product
-  fixtures, or production data.
-- Do not change a plan decision without updating `infrastructure_plan.md` through
-  the planning workflow.
+  routes, models, domain schemas, authentication flows, business logic,
+  product fixtures, or production data.
+- Do not change a plan decision without updating the relevant plan through the
+  planning workflow.
 - Never commit secrets, `.env` files, credentials, generated reports, local
   volumes, or build artifacts.
-- Do not provision Google Cloud resources, publish images, deploy, or run remote
-  migrations from this repository setup task.
+- Do not provision Google Cloud resources, publish images, deploy, or run
+  remote migrations from this repository setup.
 
 ## Verification and lifecycle
 
 Run `./scripts/check-infrastructure.sh`, `./scripts/smoke-image.sh`, and
 `./scripts/smoke-postgres.sh` after infrastructure changes. These correspond to
-the currently meaningful local PR checks; GitHub Actions additionally runs
-Gitleaks, CodeQL, and Trivy. `smoke-postgres.sh` cleans up containers and volumes.
-For persistent local database work, use `docker compose up -d db`, then clean up
-with `docker compose down` (or `docker compose down --volumes` only when you
-intend to discard local data).
+the local PR checks; GitHub Actions additionally runs Gitleaks, CodeQL, Trivy,
+and focused Chromium browser workflows. `smoke-postgres.sh` cleans up containers
+and volumes. For persistent local database work, use `docker compose up -d db`,
+then clean up with `docker compose down` (or `docker compose down --volumes`
+only when you intend to discard local data).
 
 ## Change checklist
 
