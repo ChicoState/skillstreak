@@ -11,6 +11,9 @@ from tracking.models import (
     DailyCompletion,
     ScheduleWeekday,
     Skill,
+    SkillTag,
+    Tag,
+    TagAlias,
     UserSkill,
     UserSkillSchedule,
 )
@@ -45,13 +48,17 @@ def test_authenticated_member_can_create_a_private_weekly_custom_skill(client, u
     user_skill = UserSkill.objects.get(user=user, skill=skill)
     schedule = UserSkillSchedule.objects.get(user_skill=user_skill)
     assert response.status_code == 302
-    assert response.url == reverse("dashboard-preview")
+    assert response.url == f"{reverse('dashboard-preview')}?skill={user_skill.id}"
     assert skill.created_by == user
     assert skill.visibility == Skill.Visibility.PRIVATE
     assert skill.slug.startswith("private-")
     assert user_skill.is_active is True
     assert schedule.rule_type == UserSkillSchedule.RuleType.DAYS_PER_WEEK
     assert schedule.target_days_per_week == 3
+
+    library_response = client.get(reverse("dashboard-preview"), {"view": "library"})
+    assert skill in library_response.context["library"]
+    assert "My skill" in library_response.content.decode()
 
 
 @pytest.mark.django_db
@@ -67,6 +74,31 @@ def test_authenticated_member_can_create_a_monthly_any_day_goal(client, user) ->
     assert response.status_code == 302
     assert schedule.rule_type == UserSkillSchedule.RuleType.DAYS_PER_MONTH
     assert schedule.target_days_per_month == 12
+
+
+@pytest.mark.django_db
+def test_personal_skill_uses_the_best_existing_tag(client, user) -> None:
+    pets = Tag.objects.create(slug="pets", name="Pets")
+    TagAlias.objects.create(tag=pets, term="dog")
+    general = Tag.objects.create(slug="general", name="General")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("create-custom-skill"),
+        custom_skill_payload(name="Walk my dog", frequency="daily", target_days=""),
+    )
+
+    skill = Skill.objects.get(name="Walk my dog")
+    assert response.status_code == 302
+    assert SkillTag.objects.get(skill=skill).tag == pets
+
+    fallback_response = client.post(
+        reverse("create-custom-skill"),
+        custom_skill_payload(name="Build a diorama", frequency="daily", target_days=""),
+    )
+    fallback_skill = Skill.objects.get(name="Build a diorama")
+    assert fallback_response.status_code == 302
+    assert SkillTag.objects.get(skill=fallback_skill).tag == general
 
 
 @pytest.mark.django_db
@@ -116,7 +148,7 @@ def test_monthly_custom_skill_dashboard_card_shows_goal_aware_progress(client, u
     DailyCompletion.objects.create(user_skill=user_skill, completed_on=date(2026, 10, 3))
     client.force_login(user)
 
-    response = client.get(reverse("dashboard-preview"))
+    response = client.get(reverse("dashboard-preview"), {"skill": user_skill.id})
 
     assert "2 of 4 days this month" in response.content.decode()
 
@@ -131,7 +163,8 @@ def test_dashboard_skills_heading_contains_the_custom_skill_entry_point(client, 
     assert response.status_code == 200
     assert 'class="overview-add-skill"' not in content
     assert 'class="skills-add-skill library-button"' in content
-    assert content.index("Your skills") < content.index(f'href="{reverse("create-custom-skill")}"')
+    assert "All your skills" in content
+    assert f'href="{reverse("dashboard-preview")}?view=library"' in content
 
 
 def test_custom_skill_creation_requires_authentication(client) -> None:

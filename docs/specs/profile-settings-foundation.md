@@ -89,7 +89,8 @@ must never use user-supplied ownership identifiers.
   authorization tests.
 - Read-only display of the current user's email address.
 - Persisted IANA timezone selection.
-- Persisted reminder on/off preference.
+- Persisted reminder on/off preference and a persisted Green, Blue, or Purple
+  color-palette choice.
 - Clear validation feedback for an invalid timezone value.
 
 ## Out of Scope

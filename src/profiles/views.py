@@ -9,6 +9,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods, require_POST
 
 from tracking.models import MissedSkillEpisode, ProfileReminderDigestDismissal, UserPreference
+from tracking.reminders import apply_reminder_preference_change, reconcile_missed_skills
 
 from .forms import ProfileSettingsForm
 
@@ -53,10 +54,15 @@ def settings(request: HttpRequest) -> HttpResponse:
         defaults={"timezone": "UTC", "reminders_enabled": False},
     )
     return_url = _return_url(request)
+    previously_enabled = preference.reminders_enabled
     form = ProfileSettingsForm(request.POST or None, instance=preference)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        preference = form.save(commit=False)
+        apply_reminder_preference_change(preference, previously_enabled=previously_enabled)
+        preference.save()
         return redirect(return_url)
+    if preference.reminders_enabled:
+        reconcile_missed_skills(preference)
     return render(
         request,
         "profiles/settings.html",
