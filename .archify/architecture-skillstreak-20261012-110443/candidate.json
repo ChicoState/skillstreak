@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SkillStreak — Runtime Architecture",
+    "subtitle": "Django 5.2 + PostgreSQL on Google Cloud Run · internal @csuchico.edu accounts",
+    "output": "skillstreak-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:ChicoState/skillstreak.git",
+      "link_mode": "local-only",
+      "revision": "ffd8671242a44d4fd2b2246f7795487123c66b02"
+    }
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Team Member",
+      "sublabel": "Browser · @csuchico.edu",
+      "pos": [40, 330],
+      "size": [130, 64],
+      "sources": [
+        { "path": "src/accounts/models.py", "line": 8, "end_line": 19, "label": "team email domain gate" }
+      ]
+    },
+    {
+      "id": "registry",
+      "type": "cloud",
+      "label": "Artifact Registry",
+      "sublabel": "immutable image :github.sha",
+      "tag": "Trivy-scanned",
+      "pos": [260, 140],
+      "size": [160, 60],
+      "sources": [
+        { "path": ".github/workflows/release.yml", "line": 38, "end_line": 49, "label": "build · scan · push" }
+      ]
+    },
+    {
+      "id": "secrets",
+      "type": "security",
+      "label": "Secret Manager",
+      "sublabel": "SECRET_KEY · DATABASE_URL · HOSTS",
+      "pos": [480, 140],
+      "size": [180, 60],
+      "sources": [
+        { "path": "src/skillstreak/settings/production.py", "line": 6, "end_line": 11, "label": "required deployment config" }
+      ]
+    },
+    {
+      "id": "gunicorn",
+      "type": "backend",
+      "label": "Gunicorn (WSGI)",
+      "sublabel": "Cloud Run container :8000 · uid 10001",
+      "pos": [255, 330],
+      "size": [170, 64],
+      "sources": [
+        { "path": "Dockerfile", "line": 24, "end_line": 36, "label": "non-root runtime + gunicorn" }
+      ]
+    },
+    {
+      "id": "middleware",
+      "type": "security",
+      "label": "Middleware Stack",
+      "sublabel": "Security · Session · CSRF · Auth",
+      "pos": [485, 330],
+      "size": [170, 64],
+      "sources": [
+        { "path": "src/skillstreak/settings/base.py", "line": 21, "end_line": 29, "label": "MIDDLEWARE order" }
+      ]
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "URL Router",
+      "sublabel": "skillstreak.urls",
+      "pos": [710, 330],
+      "size": [140, 64],
+      "sources": [
+        { "path": "src/skillstreak/urls.py", "line": 1, "end_line": 13, "label": "root URLconf" }
+      ]
+    },
+    {
+      "id": "accounts",
+      "type": "backend",
+      "label": "accounts app",
+      "sublabel": "register · sign-in · logout",
+      "pos": [950, 330],
+      "size": [150, 64],
+      "sources": [
+        { "path": "src/accounts/views.py", "line": 12, "end_line": 50, "label": "auth views" },
+        { "path": "src/accounts/forms.py", "line": 27, "end_line": 49, "label": "domain + password validation" }
+      ]
+    },
+    {
+      "id": "dashboard",
+      "type": "backend",
+      "label": "dashboard app",
+      "sublabel": "login_required preview",
+      "pos": [1190, 330],
+      "size": [150, 64],
+      "sources": [
+        { "path": "src/dashboard/views.py", "line": 8, "end_line": 11, "label": "gated preview view" }
+      ]
+    },
+    {
+      "id": "health",
+      "type": "backend",
+      "label": "Health Check",
+      "sublabel": "/healthz liveness (no DB)",
+      "pos": [705, 520],
+      "size": [150, 60],
+      "sources": [
+        { "path": "src/skillstreak/health.py", "line": 7, "end_line": 9, "label": "constant liveness JSON" }
+      ]
+    },
+    {
+      "id": "authsess",
+      "type": "security",
+      "label": "Auth & Sessions",
+      "sublabel": "django.contrib.auth · DB sessions",
+      "pos": [945, 520],
+      "size": [160, 60],
+      "sources": [
+        { "path": "src/skillstreak/settings/base.py", "line": 59, "end_line": 64, "label": "custom user + DB session engine" },
+        { "path": "src/accounts/models.py", "line": 55, "end_line": 74, "label": "email-only User model" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL 17",
+      "sublabel": "users · sessions · (managed, private)",
+      "pos": [820, 730],
+      "size": [180, 64],
+      "sources": [
+        { "path": "compose.yml", "line": 22, "end_line": 39, "label": "db service, private network" },
+        { "path": "src/skillstreak/settings/base.py", "line": 74, "end_line": 90, "label": "DATABASE_URL → engine" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Google Cloud project (private network)",
+      "wraps": ["registry", "secrets", "gunicorn", "middleware", "router", "accounts", "dashboard", "health", "authsess", "postgres"],
+      "pad": 30
+    },
+    {
+      "kind": "security-group",
+      "label": "Cloud Run service — HTTPS · HSTS · TLS-only · non-root",
+      "wraps": ["gunicorn", "middleware", "router", "accounts", "dashboard", "health", "authsess"],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    { "id": "user-edge", "from": "user", "to": "gunicorn", "label": "HTTPS :443", "variant": "emphasis" },
+    { "id": "wsgi", "from": "gunicorn", "to": "middleware", "label": "WSGI", "variant": "emphasis" },
+    { "id": "route", "from": "middleware", "to": "router", "label": "route", "variant": "emphasis" },
+    { "id": "dispatch", "from": "router", "to": "accounts", "label": "auth URLs", "variant": "emphasis" },
+    { "id": "redirect", "from": "accounts", "to": "dashboard", "label": "redirect on auth", "variant": "emphasis" },
+    { "id": "healthz", "from": "router", "to": "health", "label": "/healthz", "fromSide": "bottom", "toSide": "top" },
+    { "id": "login", "from": "accounts", "to": "authsess", "label": "login() · hash pw", "variant": "security", "fromSide": "bottom", "toSide": "top" },
+    { "id": "gate", "from": "dashboard", "to": "authsess", "label": "login_required", "variant": "security", "fromSide": "bottom", "toSide": "right", "via": [[1265, 550]] },
+    { "id": "persist", "from": "authsess", "to": "postgres", "label": "users · sessions (SQL)", "fromSide": "bottom", "toSide": "top", "via": [[1025, 655], [910, 655]] },
+    { "id": "image", "from": "registry", "to": "gunicorn", "label": "image (deploy)", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "config", "from": "secrets", "to": "middleware", "label": "secrets inject", "variant": "security", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Primary path — sign-in / register",
+      "items": [
+        "Browser POST → CSRF + Session middleware → URL router",
+        "accounts view: @csuchico.edu domain gate + password validators",
+        "login() writes a server-side DB session; cookie is HttpOnly, SameSite=Lax",
+        "Redirect to login_required dashboard preview"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Security posture",
+      "items": [
+        "Production: DEBUG off, SSL redirect, HSTS 1yr, secure cookies, X-Frame DENY",
+        "Non-root container (uid 10001), slim base + libpq5 only",
+        "Postgres never internet-exposed; private network, no published port",
+        "Session state lives in the DB, not in the cookie"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Delivery (CI/CD)",
+      "items": [
+        "release.yml on v* tags: check --deploy + pytest → build → Trivy CRITICAL gate",
+        "Keyless GCP auth via Workload Identity Federation",
+        "Cloud Run migration Job runs manage.py migrate once per release",
+        "deploy-cloudrun → verify /healthz"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "PR quality gates",
+      "items": [
+        "Ruff format + lint, lockfile drift check",
+        "pytest with 80% branch+line coverage (Postgres service container)",
+        "CodeQL (SAST), Gitleaks (secrets), Trivy image scan"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Planned — not yet built",
+      "items": [
+        "User-owned skills/streaks schema (skills, user_skills, daily_completions, schedules, metrics) in schema.sql",
+        "Product API endpoints and browser tests",
+        "Local dev: docker compose web (runserver) + postgres:17.7"
+      ]
+    }
+  ]
+}

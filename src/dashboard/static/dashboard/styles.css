@@ -326,6 +326,10 @@ h3 { margin-bottom: .18rem; font-size: 1.1rem; }
 .library-expand-button { margin: .1rem .75rem .75rem; }
 .library-card[hidden], .library-group[hidden] { display: none; }
 .empty-state { border: 1px dashed var(--line); border-radius: var(--radius); padding: 1.25rem; }
+.date-grid { display: grid; grid-template-columns: repeat(8, minmax(2rem, 1fr)); gap: .35rem; margin-top: 1rem; }
+.date-grid form { min-width: 0; }
+.date-button { width: 100%; border: 1px solid var(--line); border-radius: .5rem; background: var(--canvas); color: var(--muted); cursor: pointer; font-size: .7rem; padding: .4rem .2rem; }
+.date-button.completed { border-color: var(--moss); background: var(--sage); color: var(--moss-dark); font-weight: 750; }
 
 @media (min-width: 48rem) {
   .dashboard { display: grid; grid-template-columns: 15rem 1fr; }

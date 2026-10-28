@@ -49,6 +49,23 @@
               </div>
             </details>
           </header>
+          <section class="overview" aria-labelledby="overview-title">
+            <div><p class="eyebrow">Your progression</p><h2 id="overview-title">Level {{ progression.level }}</h2><div class="progress-track" aria-label="{{ progression.progress_percent }} percent toward the next level"><span style="width: {{ progression.progress_percent }}%"></span></div></div>
+            <p class="overview-progress"><strong>{{ progression.total_xp }} XP</strong>{% if progression.next_level_xp %}{{ progression.next_level_xp }} XP next threshold{% else %}Maximum level{% endif %}</p>
+          </section>
+          {% if not timezone_configured %}
+            <section class="setup-panel" aria-labelledby="timezone-title"><p class="eyebrow">One quick setup step</p><h2 id="timezone-title">Set your timezone</h2><p>We use your local calendar to keep scheduled completions fair and accurate.</p><form method="post" action="{% url 'account-timezone-sync' %}" id="timezone-form">{% csrf_token %}<input type="hidden" name="timezone" id="timezone-input" value=""><button class="primary-button" type="submit">Use my local timezone</button></form></section>
+          {% endif %}
+          <section class="owned-skills-section" aria-labelledby="owned-skills-title">
+            <div class="section-heading"><div><p class="eyebrow">Account-owned routines</p><h2 id="owned-skills-title">Your scheduled skills</h2></div><a class="skills-add-skill library-button" href="{% url 'skill-create' %}">Add skill</a></div>
+            {% if skill_cards %}
+              <div class="skill-grid">
+                {% for card in skill_cards %}
+                  <article class="skill-card"><div class="skill-card-heading"><div class="skill-icon running" aria-hidden="true">✦</div><div><h3>{{ card.skill.name }}</h3><p>Scheduled practice</p></div></div>{% if timezone_configured %}<div class="date-grid" aria-label="{{ card.skill.name }} completion dates">{% for day in card.days %}{% if day.scheduled %}<form method="post" action="{% url 'skill-toggle-completion' card.skill.pk %}">{% csrf_token %}<input type="hidden" name="completed_on" value="{{ day.date|date:'Y-m-d' }}"><button class="date-button{% if day.completed %} completed{% endif %}" type="submit" aria-label="{{ card.skill.name }}: {{ day.date|date:'l, F j' }}">{{ day.label }} {{ day.day_number }}</button></form>{% endif %}{% endfor %}</div>{% else %}<p class="card-message">Set your timezone above to see completion dates.</p>{% endif %}</article>
+                {% endfor %}
+              </div>
+            {% else %}<p class="empty-state">Choose a skill below to begin tracking it.</p>{% endif %}
+          </section>
           {% if active_view == "dashboard" %}
           <section id="skills" class="skills-section" aria-labelledby="skills-title">
             {% if selected_card %}

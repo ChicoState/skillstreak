@@ -9,6 +9,7 @@ from .health import health_check
 
 urlpatterns = [
     path("", include("accounts.urls")),
+    path("", include("skills.urls")),
     path("profile/", include("profiles.urls")),
     path("", preview, name="dashboard-preview"),
     path("skills/new/", create_custom_skill, name="create-custom-skill"),

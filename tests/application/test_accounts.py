@@ -5,6 +5,7 @@ from html import unescape
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import Client
 
 from tracking.models import Skill, UserSkill
@@ -176,3 +177,38 @@ def test_sign_in_ignores_an_external_return_target(client) -> None:
 
     assert response.status_code == 302
     assert response.url == "/"
+
+
+@pytest.mark.django_db
+def test_account_can_store_a_valid_iana_timezone() -> None:
+    user = get_user_model().objects.create_user(
+        email="learner@csuchico.edu", password="Secure skillstreak password 2026!"
+    )
+
+    user.timezone = "America/Los_Angeles"
+    user.full_clean()
+    user.save()
+
+    assert get_user_model().objects.get(pk=user.pk).timezone == "America/Los_Angeles"
+
+
+@pytest.mark.django_db
+def test_account_timezone_can_remain_unset() -> None:
+    user = get_user_model().objects.create_user(
+        email="learner@csuchico.edu", password="Secure skillstreak password 2026!"
+    )
+
+    user.full_clean()
+
+    assert user.timezone is None
+
+
+@pytest.mark.django_db
+def test_account_rejects_an_invalid_iana_timezone() -> None:
+    user = get_user_model().objects.create_user(
+        email="learner@csuchico.edu", password="Secure skillstreak password 2026!"
+    )
+    user.timezone = "Not/A_Timezone"
+
+    with pytest.raises(ValidationError, match="valid IANA timezone"):
+        user.full_clean()

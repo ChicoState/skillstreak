@@ -9,6 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parents[3]
 INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
+    "skills.apps.SkillsConfig",
     "dashboard.apps.DashboardConfig",
     "profiles.apps.ProfilesConfig",
     "tracking.apps.TrackingConfig",

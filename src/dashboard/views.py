@@ -1,7 +1,7 @@
 """Dashboard landing, skill detail, and library views for authenticated members."""
 
 from calendar import monthrange
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch, Q, prefetch_related_objects
@@ -9,6 +9,9 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from skills.forms import SkillForm, TimezoneForm
+from skills.models import Skill as OwnedSkill
+from skills.progression import TimezoneNotConfigured, local_date_for_user, progression_for_user
 from tracking.library import available_library_skills, normalize_library_query
 from tracking.models import (
     DailyCompletion,
@@ -21,6 +24,73 @@ from tracking.models import (
 )
 from tracking.progress import current_goal_progress
 from tracking.reminders import reconcile_missed_skills
+
+DATE_RANGE_DAYS = 7
+
+
+def _owned_skill_card(skill: OwnedSkill, dates: list[date]) -> dict:
+    scheduled_weekdays = {schedule.weekday for schedule in skill.schedules.all()}
+    completed_dates = {completion.completed_on for completion in skill.completions.all()}
+    return {
+        "skill": skill,
+        "scheduled_weekdays": scheduled_weekdays,
+        "completed_dates": completed_dates,
+        "days": [
+            {
+                "date": current_date,
+                "label": current_date.strftime("%a"),
+                "day_number": current_date.day,
+                "scheduled": current_date.weekday() in scheduled_weekdays,
+                "completed": current_date in completed_dates,
+                "today": current_date == dates[-1],
+            }
+            for current_date in dates
+        ],
+    }
+
+
+def progression_context(request: HttpRequest, extra: dict | None = None) -> dict:
+    """Build the account-owned skill and progression context."""
+    user = request.user
+    context = {
+        "progression": progression_for_user(user),
+        "skill_form": SkillForm(),
+        "timezone_form": TimezoneForm(),
+        "completion_form": None,
+        "timezone_configured": False,
+        "date_labels": [],
+        "skill_cards": [],
+    }
+    try:
+        local_today = local_date_for_user(user)
+    except TimezoneNotConfigured:
+        local_today = None
+
+    skills = OwnedSkill.objects.filter(owner=user).prefetch_related("schedules", "completions")
+    if local_today:
+        dates = [local_today - timedelta(days=offset) for offset in range(DATE_RANGE_DAYS, -1, -1)]
+        context["timezone_configured"] = True
+        context["date_labels"] = [
+            {
+                "date": current_date,
+                "label": current_date.strftime("%a"),
+                "today": current_date == local_today,
+            }
+            for current_date in dates
+        ]
+        context["skill_cards"] = [_owned_skill_card(skill, dates) for skill in skills]
+    else:
+        context["skill_cards"] = [
+            {"skill": skill, "scheduled_weekdays": set(), "completed_dates": set(), "days": []}
+            for skill in skills
+        ]
+    if extra:
+        context.update(extra)
+    return context
+
+
+# Kept as the integration seam used by the account-owned skill mutation views.
+dashboard_context = progression_context
 
 
 def current_schedule(user_skill: UserSkill, today):
@@ -229,23 +299,25 @@ def preview(request: HttpRequest) -> HttpResponse:
             else library.none()
         )
         library_tags = Tag.objects.all()
+    context = {
+        **progression_context(request),
+        "active_skills": active_skills,
+        "active_view": active_view,
+        "selected_user_skill": selected_user_skill,
+        "selected_card": selected_card,
+        "landing_cards": landing_cards,
+        "library_query": library_query,
+        "library_tag": library_tag,
+        "library_tags": library_tags,
+        "library": library,
+        "library_results": library_results,
+        "today": today,
+        "theme": theme,
+        "active_missed_skill_ids": active_missed_skill_ids,
+        "active_skill_ids": {item.skill_id for item in active_skills},
+    }
     return render(
         request,
         "dashboard/preview.html",
-        {
-            "active_skills": active_skills,
-            "active_view": active_view,
-            "selected_user_skill": selected_user_skill,
-            "selected_card": selected_card,
-            "landing_cards": landing_cards,
-            "library_query": library_query,
-            "library_tag": library_tag,
-            "library_tags": library_tags,
-            "library": library,
-            "library_results": library_results,
-            "today": today,
-            "theme": theme,
-            "active_missed_skill_ids": active_missed_skill_ids,
-            "active_skill_ids": {item.skill_id for item in active_skills},
-        },
+        context,
     )
