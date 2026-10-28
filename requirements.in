@@ -1,5 +1,5 @@
 # Application and development tooling. `requirements.txt` is the resolved lockfile.
-certifi==2026.10.19
+certifi>=2026.10.19,<2027
 Django>=6.1.2,<6.2
 gunicorn>=26.2,<27
 psycopg[binary]>=3.2,<3.4
@@ -8,4 +8,4 @@ pytest>=9,<10
 pytest-cov>=7,<8
 pytest-django>=4.11,<5
 playwright>=1.58,<2
-ruff>=0.15,<0.16
+ruff>=0.17.1,<0.18
