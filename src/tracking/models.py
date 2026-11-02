@@ -40,11 +40,18 @@ class Skill(models.Model):
         max_length=16, choices=Visibility.choices, default=Visibility.SYSTEM
     )
     is_active = models.BooleanField(default=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField("Tag", through="SkillTag", related_name="skills")
 
     class Meta:
         db_table = "skills"
+        indexes = [
+            models.Index(
+                fields=["visibility", "created_by", "archived_at"],
+                name="skills_private_archive_idx",
+            )
+        ]
         constraints = [
             models.CheckConstraint(condition=~Q(slug=""), name="skills_nonempty_slug"),
             models.CheckConstraint(condition=~Q(name=""), name="skills_nonempty_name"),

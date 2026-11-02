@@ -37,6 +37,11 @@ class CustomSkillForm(forms.Form):
         widget=forms.NumberInput(attrs={"autocomplete": "off"}),
     )
 
+    def __init__(self, *args, editing: bool = False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if editing:
+            self.fields.pop("started_on")
+
     def clean_name(self) -> str:
         name = self.cleaned_data["name"]
         if not name:

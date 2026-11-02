@@ -9,7 +9,11 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from tracking.library import available_library_skills, normalize_library_query
+from tracking.library import (
+    archived_private_skills,
+    available_library_skills,
+    normalize_library_query,
+)
 from tracking.models import (
     DailyCompletion,
     MissedSkillEpisode,
@@ -195,6 +199,7 @@ def preview(request: HttpRequest) -> HttpResponse:
     library_tags = Tag.objects.none()
     library = available_library_skills(request.user).none()
     library_results = library
+    archived_skills = archived_private_skills(request.user) if active_view == "library" else []
     if active_view == "library":
         library_query = normalize_library_query(request.GET.get("q", ""))
         library_tag = request.GET.get("tag", "").strip()[:48]
@@ -243,6 +248,7 @@ def preview(request: HttpRequest) -> HttpResponse:
             "library_tags": library_tags,
             "library": library,
             "library_results": library_results,
+            "archived_skills": archived_skills,
             "today": today,
             "theme": theme,
             "active_missed_skill_ids": active_missed_skill_ids,

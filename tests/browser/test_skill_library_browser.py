@@ -16,6 +16,7 @@ from tracking.models import (
     TagAlias,
     UserPreference,
     UserSkill,
+    UserSkillSchedule,
 )
 
 
@@ -234,4 +235,61 @@ def test_member_can_dismiss_the_profile_missed_skills_digest_in_the_browser(live
         page.goto(f"{live_server.url}/")
         card = page.locator(".landing-skill-card", has_text="Digest browser skill")
         expect(card.get_by_role("img", name="Missed scheduled skill")).to_be_visible()
+        browser.close()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_member_can_edit_archive_and_restore_a_private_skill_in_the_browser(live_server) -> None:
+    user = get_user_model().objects.create_user(
+        email="private-management-browser-user@csuchico.edu",
+        password="A safe browser test password 2026",
+    )
+    skill = Skill.objects.create(
+        slug="private-management-skill",
+        name="Practice guitar",
+        description="Practice scales.",
+        visibility=Skill.Visibility.PRIVATE,
+        created_by=user,
+    )
+    user_skill = UserSkill.objects.create(user=user, skill=skill, started_on=timezone.localdate())
+    UserSkillSchedule.objects.create(
+        user_skill=user_skill,
+        rule_type=UserSkillSchedule.RuleType.DAILY,
+        effective_from=timezone.localdate(),
+    )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+        page.goto(f"{live_server.url}/sign-in")
+        page.get_by_label("Email").fill(user.email)
+        page.get_by_label("Password").fill("A safe browser test password 2026")
+        page.get_by_role("button", name="Sign in").click()
+        page.get_by_role("link", name="Skill library").click()
+
+        page.locator(".library-card", has_text="Practice guitar").get_by_role(
+            "link", name="Edit"
+        ).click()
+        expect(page.get_by_role("heading", name="Edit skill")).to_be_visible()
+        page.get_by_label("Skill name").fill("Practice piano")
+        page.get_by_label("Monthly").check()
+        page.get_by_label("Target days").fill("12")
+        page.get_by_role("button", name="Save changes").click()
+        expect(page).to_have_url(re.compile(rf"{re.escape(live_server.url)}/\?skill=\d+$"))
+        expect(
+            page.locator(".skill-detail").get_by_role("heading", name="Practice piano")
+        ).to_be_visible()
+
+        page.get_by_role("link", name="Skill library").click()
+        page.locator(".library-card", has_text="Practice piano").get_by_role(
+            "link", name="Edit"
+        ).click()
+        page.on("dialog", lambda dialog: dialog.accept())
+        page.get_by_role("button", name="Delete skill").click()
+        expect(page).to_have_url(f"{live_server.url}/?view=library")
+        page.get_by_text("Archived skills").click()
+        archived = page.locator(".library-card", has_text="Practice piano")
+        archived.get_by_role("button", name="Restore").click()
+        expect(page.locator(".library-card", has_text="Practice piano")).to_be_visible()
+        expect(page.get_by_role("link", name="Practice piano")).not_to_be_visible()
         browser.close()

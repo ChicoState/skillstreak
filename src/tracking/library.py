@@ -9,9 +9,19 @@ MAX_LIBRARY_QUERY_LENGTH = 100
 
 def available_library_skills(user) -> QuerySet[Skill]:
     """Return active system skills and active private skills owned by ``user``."""
-    return Skill.objects.filter(is_active=True).filter(
+    return Skill.objects.filter(is_active=True, archived_at__isnull=True).filter(
         Q(visibility=Skill.Visibility.SYSTEM)
         | Q(visibility=Skill.Visibility.PRIVATE, created_by=user)
+    )
+
+
+def archived_private_skills(user) -> QuerySet[Skill]:
+    """Return archived private skills owned by ``user``."""
+    return Skill.objects.filter(
+        is_active=True,
+        archived_at__isnull=False,
+        visibility=Skill.Visibility.PRIVATE,
+        created_by=user,
     )
 
 
