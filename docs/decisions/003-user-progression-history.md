@@ -57,6 +57,9 @@ layer. Completion mutations execute in a database transaction.
 - The feature requires a `skills` migration and a migration adding timezone to
   the custom account model.
 - XP and level always reflect completion history and can be safely recomputed.
+  This includes both account-owned scheduled completions and the selected-skill
+  tracker's daily completions, so either dashboard completion flow updates the
+  same derived progression.
 - Future XP sources need an intentional ADR revision rather than silently
   changing the calculation.
 - Dashboard aggregate queries should be monitored if data volume later makes

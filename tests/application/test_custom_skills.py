@@ -1,6 +1,6 @@
 """Custom-skill creation, ownership, and goal-progress behavior."""
 
-from datetime import date
+from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -131,21 +131,23 @@ def test_custom_skills_are_not_visible_to_another_member(client, user) -> None:
 
 @pytest.mark.django_db
 def test_monthly_custom_skill_dashboard_card_shows_goal_aware_progress(client, user) -> None:
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
     skill = Skill.objects.create(
         slug="private-sketch-test",
         name="Sketch",
         created_by=user,
         visibility=Skill.Visibility.PRIVATE,
     )
-    user_skill = UserSkill.objects.create(user=user, skill=skill, started_on=date(2026, 10, 1))
+    user_skill = UserSkill.objects.create(user=user, skill=skill, started_on=month_start)
     UserSkillSchedule.objects.create(
         user_skill=user_skill,
         rule_type=UserSkillSchedule.RuleType.DAYS_PER_MONTH,
-        effective_from=date(2026, 10, 1),
+        effective_from=month_start,
         target_days_per_month=4,
     )
-    DailyCompletion.objects.create(user_skill=user_skill, completed_on=date(2026, 10, 2))
-    DailyCompletion.objects.create(user_skill=user_skill, completed_on=date(2026, 10, 3))
+    DailyCompletion.objects.create(user_skill=user_skill, completed_on=today - timedelta(days=1))
+    DailyCompletion.objects.create(user_skill=user_skill, completed_on=today)
     client.force_login(user)
 
     response = client.get(reverse("dashboard-preview"), {"skill": user_skill.id})

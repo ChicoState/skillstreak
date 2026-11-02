@@ -7,6 +7,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.db import transaction
 from django.utils import timezone
 
+from tracking.models import DailyCompletion
+
 from .models import Completion, Skill, SkillSchedule
 
 XP_PER_COMPLETION = 10
@@ -40,6 +42,13 @@ class Progression:
         level_span = self.next_level_xp - self.level_start_xp
         return int((self.total_xp - self.level_start_xp) * 100 / level_span)
 
+    @property
+    def xp_progress_percent(self) -> int:
+        """Return cumulative XP progress toward the next threshold."""
+        if self.next_level_xp is None:
+            return 100
+        return min(100, int(self.total_xp * 100 / self.next_level_xp))
+
 
 def level_threshold(level: int) -> int:
     """Return the cumulative XP required to reach a level."""
@@ -63,7 +72,9 @@ def level_for_xp(total_xp: int) -> int:
 
 def progression_for_user(user) -> Progression:
     """Derive progression from the account's completion history."""
-    completion_count = Completion.objects.filter(skill__owner=user).count()
+    owned_skill_completions = Completion.objects.filter(skill__owner=user).count()
+    selected_skill_completions = DailyCompletion.objects.filter(user_skill__user=user).count()
+    completion_count = owned_skill_completions + selected_skill_completions
     total_xp = completion_count * XP_PER_COMPLETION
     level = level_for_xp(total_xp)
     next_level = level + 1 if level < MAX_LEVEL else None

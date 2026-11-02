@@ -75,6 +75,7 @@ def test_progression_is_derived_from_completion_history() -> None:
     assert progression.level_start_xp == 20
     assert progression.next_level_xp == 40
     assert progression.progress_percent == 0
+    assert progression.xp_progress_percent == 50
 
 
 @pytest.mark.django_db
