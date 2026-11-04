@@ -1,6 +1,6 @@
 """Custom-skill creation, ownership, and goal-progress behavior."""
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -146,10 +146,8 @@ def test_monthly_custom_skill_dashboard_card_shows_goal_aware_progress(client, u
         effective_from=month_start,
         target_days_per_month=4,
     )
-    DailyCompletion.objects.create(user_skill=user_skill, completed_on=month_start)
-    DailyCompletion.objects.create(
-        user_skill=user_skill, completed_on=month_start + date.resolution
-    )
+    DailyCompletion.objects.create(user_skill=user_skill, completed_on=today - timedelta(days=1))
+    DailyCompletion.objects.create(user_skill=user_skill, completed_on=today)
     client.force_login(user)
 
     response = client.get(reverse("dashboard-preview"), {"skill": user_skill.id})

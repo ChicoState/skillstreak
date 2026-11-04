@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SkillStreak</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
-    <script src="{% static 'dashboard/library.js' %}" defer></script>
+    <script src="{% static 'dashboard/library.js' %}?v=2" defer></script>
   </head>
   <body data-theme="{{ theme }}">
     <main class="preview">
@@ -49,6 +49,13 @@
               </div>
             </details>
           </header>
+          <section class="overview" aria-labelledby="overview-title">
+            <div><p class="eyebrow">Your progression</p><h2 id="overview-title">Level {{ progression.level }}</h2>{% if progression.next_level_xp %}<div class="progress-row"><div class="progress-track" role="progressbar" aria-label="XP progress toward level {{ progression.level|add:'1' }}" aria-valuemin="0" aria-valuemax="{{ progression.next_level_xp }}" aria-valuenow="{{ progression.total_xp }}"><span style="width: {{ progression.xp_progress_percent }}%"></span></div><p class="progress-caption">{{ progression.total_xp }} XP / {{ progression.next_level_xp }} XP</p></div>{% else %}<p class="progress-caption">{{ progression.total_xp }} XP — maximum level</p>{% endif %}</div>
+            <p class="overview-progress"><strong>{{ progression.total_xp }} XP</strong>{% if progression.next_level_xp %}{{ progression.next_level_xp }} XP next threshold{% else %}Maximum level{% endif %}</p>
+          </section>
+          {% if not timezone_configured %}
+            <section class="setup-panel" aria-labelledby="timezone-title"><p class="eyebrow">One quick setup step</p><h2 id="timezone-title">Set your timezone</h2><p>We use your local calendar to keep scheduled completions fair and accurate.</p><form method="post" action="{% url 'account-timezone-sync' %}" id="timezone-form">{% csrf_token %}<input type="hidden" name="timezone" id="timezone-input" value=""><button class="primary-button" type="submit">Use my local timezone</button></form></section>
+          {% endif %}
           {% if active_view == "dashboard" %}
           <section id="skills" class="skills-section" aria-labelledby="skills-title">
             {% if selected_card %}

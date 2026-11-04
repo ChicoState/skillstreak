@@ -1,82 +1,51 @@
 # SkillStreak
 
-SkillStreak is planned as a multi-account Django web application with PostgreSQL.
-This repository currently contains its development, quality, Docker, delivery
-foundation, a minimal Django source framework, liveness route, internal
-`@csuchico.edu` account registration/sign-in, and a PostgreSQL-backed selected
-skill dashboard at `/`. It is not a production account system.
+SkillStreak is a multi-account Django web application with PostgreSQL. The
+current local product slice provides internal `@csuchico.edu` account
+registration/sign-in, private scheduled skills, selected system skills,
+completion tracking, reminders, and dashboard progression.
 
 ## Repository map
 
 | Location | Purpose | Status |
 |---|---|---|
 | `infrastructure_plan.md` | Approved infrastructure decisions | Current source of truth |
-| `requirements.in`, `requirements.txt`, `pyproject.toml` | Python dependencies, resolved lockfile, and tool configuration | Ready |
+| `requirements.in`, `requirements.txt`, `pyproject.toml` | Python dependencies, lockfile, and tool configuration | Ready |
 | `compose.yml`, `Dockerfile`, `.dockerignore` | Local Django/PostgreSQL stack and hardened runtime image | Ready |
 | `scripts/` | Infrastructure validation and disposable Docker smoke tests | Ready |
 | `tests/application/`, `tests/browser/`, `tests/infrastructure/` | Django, Chromium browser, and infrastructure tests | Ready |
-| `docs/specs/`, `docs/plans/` | Reviewed specifications and implementation plans | Bootstrap work documented |
-| `.github/workflows/` | Pull-request checks and guarded Cloud Run release workflow | Ready |
-| `src/`, `manage.py` | Django project, team accounts, and selected-skill dashboard | Ready for local MVP use |
-| `src/tracking/` | Tracking schema, PostgreSQL migrations, system-skill seeding, and private custom-skill goals | Ready for local MVP use |
-| `docs/specs/selectable-binary-skill-tracking.md` | Selected binary-skill MVP scope | Current |
-| `docs/specs/private-custom-skill-goals.md` | Private daily, weekly, and monthly custom-skill goal scope | Current |
-| `docs/specs/internal-team-accounts.md` | Approved internal-account scope | Current |
-| `.agents/skills/` | Repository-specific agent guidance | Available |
+| `docs/specs/`, `docs/plans/`, `docs/decisions/` | Reviewed product scope and decisions | Current |
+| `src/skills/` | Account-owned scheduled skills and XP/level progression | Implemented |
+| `src/tracking/` | Selected skills, schedules, reminders, and completion tracking | Implemented |
+| `src/profiles/` | Profile and reminder preferences | Implemented |
 
-## Getting Started
+## Getting started
 
-1. Install [Git](https://git-scm.com/downloads), [Docker Desktop](https://www.docker.com/products/docker-desktop/), and a current Chrome, Firefox, Safari, or Edge browser. Python is supplied by the development containers; Docker Desktop must be running.
-2. Copy the non-secret local template if you need to customize the local database values:
+1. Install [Git](https://git-scm.com/downloads), [Docker Desktop](https://www.docker.com/products/docker-desktop/), and a current Chrome, Firefox, Safari, or Edge browser.
+2. Optionally copy the non-secret local template:
 
    ```sh
    cp .env.example .env
    ```
 
-   Never commit `.env`. Cloud Run receives real `DATABASE_URL` and
-   `DJANGO_SECRET_KEY` values from Google Cloud-managed secrets.
-3. Regenerate the dependency lockfiles after editing `requirements.in` or the
-   production-only `requirements.runtime.in`:
-
-   ```sh
-   docker run --rm --volume "$PWD:/workspace" --workdir /workspace python:3.14.7-slim-bookworm \
-     sh -c 'python -m pip install "pip-tools>=7.5,<8" && python -m piptools compile --strip-extras --output-file requirements.txt requirements.in && python -m piptools compile --strip-extras --output-file requirements.runtime.txt requirements.runtime.in'
-   ```
-4. Start the local Django and PostgreSQL services:
+   Never commit `.env`; production secrets belong in managed configuration.
+3. Start the local services:
 
    ```sh
    docker compose up --build
    ```
 
-   Prepare the local schema and skill catalog in a second terminal:
+4. In another terminal, prepare the schema and system skill catalog:
 
    ```sh
    docker compose exec web python manage.py migrate
    docker compose exec web python manage.py seed_system_skills
    ```
 
-   To load repeatable local data for the in-app reminder feature into an
-   existing account, use its sign-in email. The command enables reminders for
-   that account and creates missed Exercise and Read skills plus a completed
-   Meditate skill; rerunning it is safe.
+   The application listens at `http://localhost:8000` by default. Register an
+   internal account, then use the dashboard to select or create skills.
 
-   ```sh
-   docker compose exec web python manage.py seed_reminder_demo --email you@csuchico.edu
-   ```
-
-   The application listens on `http://localhost:8000` by default. Set
-   `APP_PORT` in `.env` to choose another host port. Run migrations before
-   registering an internal `@csuchico.edu` account and accessing the sample
-   dashboard. Each member can select skills from the library; selections and
-   completions belong to that signed-in account. Verify its liveness endpoint
-   from another terminal:
-
-   ```sh
-   curl --fail http://localhost:8000/healthz
-   ```
-
-   Run Django commands inside the dedicated Docker development target (which
-   includes pytest, Ruff, and Chromium):
+5. Run local checks inside the development container:
 
    ```sh
    docker compose exec web python manage.py check
@@ -85,17 +54,7 @@ skill dashboard at `/`. It is not a production account system.
    docker compose exec web ruff check .
    ```
 
-   To permanently remove the specific local account `kbruce4@csuchico.edu`
-   and its cascading records, run:
-
-   ```sh
-   ./scripts/delete-kbruce4.sh --confirm
-   ```
-
-   The script requires `--confirm`, uses Django's deletion rules, and cannot
-   be undone without a database backup.
-
-5. Validate the static infrastructure configuration:
+6. Validate infrastructure when needed:
 
    ```sh
    ./scripts/check-infrastructure.sh
@@ -103,40 +62,20 @@ skill dashboard at `/`. It is not a production account system.
    ./scripts/smoke-postgres.sh
    ```
 
-   The PostgreSQL smoke test stops the Compose stack and removes its named
-   PostgreSQL volume when it finishes. Run it only when local database data is
-   disposable.
-6. Stop the local stack with `docker compose down`. Remove local database data
-   deliberately with `docker compose down --volumes`.
-
-The production image runs Gunicorn and reports a liveness-only `/healthz`
-endpoint; it does not query PostgreSQL. Cloud Run must supply
-`DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DATABASE_URL`,
-`DJANGO_SECRET_KEY`, and `ALLOWED_HOSTS` through managed configuration and
-secrets. Full Django checks and coverage enforcement now run in pull requests;
-migrations and Chromium browser workflows are included for the local tracker.
+   The PostgreSQL smoke test removes its disposable named volume. Stop the
+   normal local stack with `docker compose down`.
 
 ## Quality and CI
 
-`requirements.txt` and `requirements.runtime.txt` are committed pip-tools
-lockfiles. Pull requests verify the development lockfile, Ruff formatting and linting, the infrastructure harness, Gitleaks,
-CodeQL, and an image build with a critical-vulnerability scan. Django system
-checks, the 80% branch-and-line coverage gate, and the focused Chromium
-browser workflow now run in pull requests.
-
-Release tags (`v*`) target Google Cloud Run through Artifact Registry. Before a
-release can run, create the Google Cloud project resources and GitHub production
-environment listed in `infrastructure_plan.md`: workload identity provider,
-service account, project/region/repository/service/migration-job variables, and
-Cloud Run-managed application secrets. The release workflow now runs Django
-checks and tests before cloud authentication; it cannot deploy until the named
-Google Cloud and GitHub production configuration exists.
+Pull requests verify the lockfile, Ruff, infrastructure configuration,
+Gitleaks, CodeQL, Trivy, Django checks, the 80% coverage gate, and focused
+Chromium browser workflows. The production image targets Google Cloud Run
+through Artifact Registry; deployment requires the protected configuration
+listed in `infrastructure_plan.md`.
 
 ## Troubleshooting
 
-- **Docker connection refused or permission denied:** start Docker Desktop, then rerun the command.
-- **Port conflicts:** set `APP_PORT` in `.env` to choose a different web port.
-  PostgreSQL is not published to the host.
-- **Lockfile differs in CI:** regenerate it with the exact container command above and commit both dependency files.
-- **Cloud Run release is blocked:** configure Google Cloud Workload Identity
-  Federation and the named GitHub production variables/secrets.
+- **Docker connection refused:** start Docker Desktop and rerun the command.
+- **Port conflicts:** set `APP_PORT` in `.env`.
+- **Lockfile differs in CI:** regenerate the lockfiles with the documented
+  pip-tools container command in the project history.
