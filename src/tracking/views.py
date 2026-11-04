@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import CustomSkillForm
-from .library import available_library_skills, normalize_library_query
+from .library import archived_private_skills, available_library_skills, normalize_library_query
 from .models import (
     DailyCompletion,
     MissedSkillEpisode,
@@ -62,6 +62,60 @@ def posted_active_user_skill_id(request: HttpRequest) -> int | None:
     return active_selection.pk if active_selection else None
 
 
+def _private_skill_for_owner(request: HttpRequest, skill_id: int) -> Skill:
+    return get_object_or_404(
+        available_library_skills(request.user),
+        pk=skill_id,
+        visibility=Skill.Visibility.PRIVATE,
+        created_by=request.user,
+    )
+
+
+def _schedule_form_initial(user_skill: UserSkill) -> dict[str, object]:
+    schedule = user_skill.userskillschedule_set.order_by("-effective_from", "-pk").first()
+    if schedule is None:
+        return {"frequency": CustomSkillForm.Frequency.DAILY, "target_days": None}
+    if schedule.rule_type == UserSkillSchedule.RuleType.DAYS_PER_WEEK:
+        return {
+            "frequency": CustomSkillForm.Frequency.WEEKLY,
+            "target_days": schedule.target_days_per_week,
+        }
+    if schedule.rule_type == UserSkillSchedule.RuleType.DAYS_PER_MONTH:
+        return {
+            "frequency": CustomSkillForm.Frequency.MONTHLY,
+            "target_days": schedule.target_days_per_month,
+        }
+    return {"frequency": CustomSkillForm.Frequency.DAILY, "target_days": None}
+
+
+def _apply_schedule_goal(schedule: UserSkillSchedule, form: CustomSkillForm) -> None:
+    schedule.rule_type = UserSkillSchedule.RuleType.DAILY
+    schedule.interval_days = None
+    schedule.target_days_per_week = None
+    schedule.target_days_per_month = None
+    schedule.week_starts_on = None
+    schedule.short_month_policy = None
+    frequency = form.cleaned_data["frequency"]
+    if frequency == CustomSkillForm.Frequency.WEEKLY:
+        schedule.rule_type = UserSkillSchedule.RuleType.DAYS_PER_WEEK
+        schedule.target_days_per_week = form.cleaned_data["target_days"]
+        schedule.week_starts_on = 1
+    elif frequency == CustomSkillForm.Frequency.MONTHLY:
+        schedule.rule_type = UserSkillSchedule.RuleType.DAYS_PER_MONTH
+        schedule.target_days_per_month = form.cleaned_data["target_days"]
+
+
+def _refresh_private_skill_tag(skill: Skill) -> None:
+    matching_slugs = tag_slugs_for_text(skill.name, skill.description, limit=99)
+    tags_by_slug = Tag.objects.in_bulk(matching_slugs, field_name="slug")
+    matching_tag = next(
+        (tags_by_slug[slug] for slug in matching_slugs if slug in tags_by_slug), None
+    )
+    SkillTag.objects.filter(skill=skill).delete()
+    if matching_tag is not None:
+        SkillTag.objects.create(skill=skill, tag=matching_tag)
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def create_custom_skill(request: HttpRequest) -> HttpResponse:
@@ -76,13 +130,7 @@ def create_custom_skill(request: HttpRequest) -> HttpResponse:
                 visibility=Skill.Visibility.PRIVATE,
                 created_by=request.user,
             )
-            matching_slugs = tag_slugs_for_text(skill.name, skill.description, limit=99)
-            tags_by_slug = Tag.objects.in_bulk(matching_slugs, field_name="slug")
-            matching_tag = next(
-                (tags_by_slug[slug] for slug in matching_slugs if slug in tags_by_slug), None
-            )
-            if matching_tag is not None:
-                SkillTag.objects.create(skill=skill, tag=matching_tag)
+            _refresh_private_skill_tag(skill)
             user_skill = UserSkill.objects.create(
                 user=request.user,
                 skill=skill,
@@ -109,6 +157,61 @@ def create_custom_skill(request: HttpRequest) -> HttpResponse:
             UserSkillSchedule.objects.create(**schedule_data)
         return redirect(f"{reverse('dashboard-preview')}?skill={user_skill.id}")
     return render(request, "tracking/create_skill.html", {"form": form})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def edit_custom_skill(request: HttpRequest, skill_id: int) -> HttpResponse:
+    """Edit an active private skill owned by the signed-in member."""
+    skill = _private_skill_for_owner(request, skill_id)
+    user_skill = get_object_or_404(UserSkill, user=request.user, skill=skill)
+    initial = {
+        "name": skill.name,
+        "description": skill.description,
+        **_schedule_form_initial(user_skill),
+    }
+    form = CustomSkillForm(request.POST or None, initial=initial, editing=True)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            skill.name = form.cleaned_data["name"]
+            skill.description = form.cleaned_data["description"]
+            skill.save(update_fields=["name", "description"])
+            _refresh_private_skill_tag(skill)
+            schedule = get_object_or_404(
+                UserSkillSchedule,
+                user_skill=user_skill,
+                effective_through__isnull=True,
+            )
+            _apply_schedule_goal(schedule, form)
+            schedule.save()
+        return redirect(f"{reverse('dashboard-preview')}?skill={user_skill.id}")
+    return render(
+        request,
+        "tracking/create_skill.html",
+        {"form": form, "editing": True, "skill_id": skill.id},
+    )
+
+
+@login_required
+@require_POST
+def delete_custom_skill(request: HttpRequest, skill_id: int) -> HttpResponse:
+    """Archive an owned private skill while retaining its history."""
+    skill = _private_skill_for_owner(request, skill_id)
+    with transaction.atomic():
+        skill.archived_at = timezone.now()
+        skill.save(update_fields=["archived_at"])
+        UserSkill.objects.filter(user=request.user, skill=skill).update(is_active=False)
+    return redirect(f"{reverse('dashboard-preview')}?view=library")
+
+
+@login_required
+@require_POST
+def restore_custom_skill(request: HttpRequest, skill_id: int) -> HttpResponse:
+    """Restore an archived private skill to the library, without selecting it."""
+    skill = get_object_or_404(archived_private_skills(request.user), pk=skill_id)
+    skill.archived_at = None
+    skill.save(update_fields=["archived_at"])
+    return redirect(f"{reverse('dashboard-preview')}?view=library")
 
 
 @login_required
