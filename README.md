@@ -33,8 +33,9 @@ skill dashboard at `/`. It is not a production account system.
    cp .env.example .env
    ```
 
-   Never commit `.env`. Cloud Run receives real `DATABASE_URL` and
-   `DJANGO_SECRET_KEY` values from Google Cloud-managed secrets.
+   Never commit `.env`. Cloud Run receives `DJANGO_SECRET_KEY`, explicit
+   `ALLOWED_HOSTS`, and (for Cloud SQL socket connections) the four
+   `CLOUD_SQL_*` values from Google Cloud-managed secrets/configuration.
 3. Regenerate the dependency lockfiles after editing `requirements.in` or the
    production-only `requirements.runtime.in`:
 
@@ -109,12 +110,21 @@ skill dashboard at `/`. It is not a production account system.
 6. Stop the local stack with `docker compose down`. Remove local database data
    deliberately with `docker compose down --volumes`.
 
-The production image runs Gunicorn and reports a liveness-only `/healthz`
-endpoint; it does not query PostgreSQL. Cloud Run must supply
-`DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DATABASE_URL`,
-`DJANGO_SECRET_KEY`, and `ALLOWED_HOSTS` through managed configuration and
-secrets. Full Django checks and coverage enforcement now run in pull requests;
-migrations and Chromium browser workflows are included for the local tracker.
+The production image runs Gunicorn, collects static files at image build time,
+serves them through WhiteNoise, and reports a liveness-only `/healthz` endpoint;
+it does not query PostgreSQL. Cloud Run must supply
+`DJANGO_SETTINGS_MODULE=skillstreak.settings.production`, `DJANGO_SECRET_KEY`,
+and explicit `ALLOWED_HOSTS`. Production database configuration can either use
+`DATABASE_URL` (including a PostgreSQL `?host=/cloudsql/…` Unix-socket query
+parameter) or `CLOUD_SQL_CONNECTION_NAME`, `CLOUD_SQL_DATABASE`,
+`CLOUD_SQL_USER`, and `CLOUD_SQL_PASSWORD`. `CSRF_TRUSTED_ORIGINS` is optional
+and defaults to `https://` origins derived from `ALLOWED_HOSTS`; set it when the
+accepted browser origins differ from the hostnames.
+
+The existing tracking migration creates the PostgreSQL `btree_gist` extension
+before adding its exclusion constraint. The Cloud SQL runtime user must have
+permission to create that extension during the controlled release migration;
+this repository does not run migrations against Cloud SQL.
 
 ## Quality and CI
 
