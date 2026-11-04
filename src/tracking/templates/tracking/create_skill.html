@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Add a skill | SkillStreak</title>
+    <title>{% if editing %}Edit skill{% else %}Add a skill{% endif %} | SkillStreak</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
     <link rel="stylesheet" href="{% static 'tracking/create_skill.css' %}">
   </head>
@@ -17,17 +17,17 @@
         </header>
         <section class="custom-skill-panel">
           <p class="eyebrow">Build your routine</p>
-          <h1 id="create-skill-title">Add a new skill</h1>
-          <p class="login-copy">Choose a goal that fits the streak you want to build.</p>
+          <h1 id="create-skill-title">{% if editing %}Edit skill{% else %}Add a new skill{% endif %}</h1>
+          <p class="login-copy">{% if editing %}Update the details and goal for this private skill.{% else %}Choose a goal that fits the streak you want to build.{% endif %}</p>
           <form class="custom-skill-form" method="post" autocomplete="off">
             {% csrf_token %}
             {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-            <label for="{{ form.name.id_for_label }}">New skill</label>
+            <label for="{{ form.name.id_for_label }}">Skill name</label>
             {{ form.name }}
             {% for error in form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-            <label for="{{ form.started_on.id_for_label }}">Start date</label>
+            {% if not editing %}<label for="{{ form.started_on.id_for_label }}">Start date</label>
             {{ form.started_on }}
-            {% for error in form.started_on.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            {% for error in form.started_on.errors %}<p class="field-error">{{ error }}</p>{% endfor %}{% endif %}
             <fieldset class="frequency-fieldset">
               <legend>Streak frequency</legend>
               <div class="frequency-options">
@@ -46,8 +46,9 @@
             <label for="{{ form.description.id_for_label }}">Description <span>(optional)</span></label>
             {{ form.description }}
             {% for error in form.description.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-            <div class="form-actions"><a class="cancel-link" href="{% url 'dashboard-preview' %}">Cancel</a><button class="primary-button" type="submit">Add skill <span aria-hidden="true">→</span></button></div>
+            <div class="form-actions"><a class="cancel-link" href="{% url 'dashboard-preview' %}">Cancel</a><button class="primary-button" type="submit">{% if editing %}Save changes{% else %}Add skill{% endif %} <span aria-hidden="true">→</span></button></div>
           </form>
+          {% if editing %}<form class="archive-form" method="post" action="{% url 'delete-custom-skill' skill_id %}" onsubmit="return window.confirm('Remove this skill from your library? Its history will be preserved and you can restore it later.');">{% csrf_token %}<button class="danger-button" type="submit">Delete skill</button></form>{% endif %}
         </section>
       </section>
     </main>
