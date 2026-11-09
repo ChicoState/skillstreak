@@ -10,7 +10,7 @@ build==1.6.1
     # via pip-tools
 certifi==2026.10.23
     # via -r requirements.in
-click==8.5.0
+click==8.5.1
     # via pip-tools
 coverage==7.17.2
     # via pytest-cov
@@ -56,7 +56,7 @@ pytest-cov==7.1.0
     # via -r requirements.in
 pytest-django==4.14.0
     # via -r requirements.in
-ruff==0.17.3
+ruff==0.17.4
     # via -r requirements.in
 sqlparse==0.6.1
     # via django
@@ -64,7 +64,7 @@ typing-extensions==4.16.0
     # via pyee
 wheel==0.48.0
     # via pip-tools
-whitenoise==6.11.0
+whitenoise==6.12.0
     # via -r requirements.in
 
 # The following packages are considered to be unsafe in a requirements file:
