@@ -38,16 +38,15 @@ Create a `development` environment with these environment variables:
 
 | Variable | Value |
 | --- | --- |
-| `GCP_SERVICE_ACCOUNT` | `skillstreak-github-deployer@skillstreak-512318.iam.gserviceaccount.com` |
+| `GCP_SERVICE_ACCOUNT` | `skillstreak-dev-deployer@skillstreak-512318.iam.gserviceaccount.com` |
 | `CLOUD_RUN_SERVICE` | `skillstreak-dev` |
 | `CLOUD_RUN_MIGRATION_JOB` | `skillstreak-dev-migrate` |
 
-Create a `production` environment with the same deployment service account only
-until Google Cloud IAM is tightened as described below, plus:
+Create a `production` environment with the production deployment service account:
 
 | Variable | Value |
 | --- | --- |
-| `GCP_SERVICE_ACCOUNT` | `skillstreak-github-deployer@skillstreak-512318.iam.gserviceaccount.com` |
+| `GCP_SERVICE_ACCOUNT` | `skillstreak-prod-deployer@skillstreak-512318.iam.gserviceaccount.com` |
 | `CLOUD_RUN_SERVICE` | `skillstreak-prod` |
 | `CLOUD_RUN_MIGRATION_JOB` | `skillstreak-prod-migrate` |
 
@@ -60,9 +59,11 @@ IAM permission granted to the deployment service account.
 
 ## Google Cloud IAM hardening
 
-The currently shared deployment account can administer both environments. For
-strong isolation, create separate deployment service accounts, for example
-`skillstreak-github-dev-deployer` and `skillstreak-github-prod-deployer`.
+The workflows use separate deployment service accounts for environment
+isolation:
+
+- `skillstreak-dev-deployer@skillstreak-512318.iam.gserviceaccount.com`
+- `skillstreak-prod-deployer@skillstreak-512318.iam.gserviceaccount.com`
 
 Grant the development account only:
 
@@ -76,8 +77,8 @@ Grant the development account only:
 
 Grant the production account the corresponding permissions only for
 `skillstreak-prod`, `skillstreak-prod-migrate`, and `skillstreak-prod-runtime`.
-Remove the shared account's project-wide `roles/run.developer` after the
-replacement bindings are verified. Keep Artifact Registry write permission
+Remove any obsolete shared account's project-wide `roles/run.developer` after
+the replacement bindings are verified. Keep Artifact Registry write permission
 scoped to the repository, and avoid granting the GitHub identities Secret
 Manager access; Cloud Run runtime service accounts should read runtime secrets.
 

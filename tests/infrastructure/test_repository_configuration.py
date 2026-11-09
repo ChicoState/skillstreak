@@ -84,6 +84,9 @@ def test_cloud_run_workflows_are_environment_and_trigger_scoped() -> None:
 
     assert 'tags: ["v*"]' in production
     assert "workflow_dispatch:" in production
+    assert "github.event_name == 'workflow_dispatch'" in production
+    assert "github.ref == 'refs/heads/main'" in production
+    assert "git merge-base --is-ancestor" in production
     assert "pull_request:" not in production
     assert "environment: production" in production
     assert "skillstreak-dev" not in production
