@@ -1,11 +1,24 @@
 """Email-only account model for SkillStreak team members."""
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
 
 TEAM_EMAIL_DOMAIN = "csuchico.edu"
+
+
+def validate_timezone(value: str | None) -> None:
+    """Reject timezone values that are not present in the IANA database."""
+    if not value:
+        return
+
+    try:
+        ZoneInfo(value)
+    except ZoneInfoNotFoundError as error:
+        raise ValidationError("Enter a valid IANA timezone.") from error
 
 
 def normalize_email(email: str) -> str:
@@ -57,6 +70,12 @@ class User(AbstractUser):
 
     username = None
     email = models.EmailField("email address", unique=True)
+    timezone = models.CharField(
+        blank=True,
+        max_length=64,
+        null=True,
+        validators=[validate_timezone],
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []

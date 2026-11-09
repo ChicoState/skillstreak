@@ -14,7 +14,7 @@ gunicorn==26.2.0
     # via -r requirements.runtime.in
 psycopg==3.3.6
     # via -r requirements.runtime.in
-sqlparse==0.6.0
+sqlparse==0.6.1
     # via django
 whitenoise==6.11.0
     # via -r requirements.runtime.in

@@ -7,13 +7,34 @@ on:
 
 permissions:
   contents: read
-  id-token: write
+
+concurrency:
+  group: cloud-run-production
+  cancel-in-progress: false
 
 jobs:
-  release:
-    name: Validate, publish, and deploy
+  validate:
+    name: Validate application
     runs-on: ubuntu-24.04
-    environment: production
+    services:
+      postgres:
+        image: postgres:17.7-bookworm
+        env:
+          POSTGRES_DB: skillstreak
+          POSTGRES_USER: skillstreak
+          POSTGRES_PASSWORD: ci-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U skillstreak -d skillstreak"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://skillstreak:ci-test-password@localhost:5432/skillstreak
+      DJANGO_SETTINGS_MODULE: skillstreak.settings.production
+      DJANGO_SECRET_KEY: ci-only-deployment-check-signing-value-not-used-outside-continuous-integration-2026
+      ALLOWED_HOSTS: localhost
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -23,11 +44,29 @@ jobs:
           cache-dependency-path: requirements.txt
       - name: Install locked dependencies
         run: python -m pip install --requirement requirements.txt
-      - name: Validate application prerequisite
-        run: |
-          test -f manage.py || { echo "Release blocked: create the Django project and manage.py before releasing."; exit 1; }
-          python manage.py check --deploy
-          pytest --cov --cov-branch --cov-fail-under=80 --cov-report=xml
+      - name: Check formatting
+        run: ruff format --check .
+      - name: Lint
+        run: ruff check .
+      - name: Django deployment checks
+        run: python manage.py check --deploy --fail-level ERROR
+      - name: Install Chromium for browser tests
+        run: python -m playwright install --with-deps chromium
+      - name: Run tests and coverage
+        run: pytest --cov --cov-branch --cov-fail-under=80 --cov-report=term-missing
+
+  publish:
+    name: Build, scan, and publish production image
+    needs: validate
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      image_ref: ${{ steps.image.outputs.image_ref }}
+    steps:
+      - uses: actions/checkout@v7
       - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -35,26 +74,74 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v3
       - name: Configure Artifact Registry authentication
         run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
-      - name: Build and publish immutable image
+      - name: Build and publish commit image
         env:
           IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}/skillstreak:${{ github.sha }}
-        run: docker build --tag "$IMAGE" . && docker push "$IMAGE"
+        run: |
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
+      - name: Resolve published image digest
+        id: image
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+          REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT/$REPOSITORY/skillstreak:$COMMIT_SHA"
+          DIGEST="$(gcloud artifacts docker images describe "$IMAGE" \
+            --project="$PROJECT" --format='value(image_summary.digest)')"
+          test -n "$DIGEST"
+          echo "image_ref=$REGION-docker.pkg.dev/$PROJECT/$REPOSITORY/skillstreak@$DIGEST" >> "$GITHUB_OUTPUT"
       - name: Scan published image for critical vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}/skillstreak:${{ github.sha }}
+          image-ref: ${{ steps.image.outputs.image_ref }}
           format: table
           exit-code: "1"
           severity: CRITICAL
           ignore-unfixed: true
-      - name: Run Django migrations once
-        run: gcloud run jobs execute "${{ vars.CLOUD_RUN_MIGRATION_JOB }}" --region "${{ vars.GCP_REGION }}" --wait
-      - name: Deploy to Cloud Run
+          trivyignores: .trivyignore.yaml
+
+  deploy:
+    name: Migrate and deploy production
+    needs: publish
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Update migration job image
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+          MIGRATION_JOB: ${{ vars.CLOUD_RUN_MIGRATION_JOB }}
+          IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
+        run: |
+          gcloud run jobs update "$MIGRATION_JOB" \
+            --image "$IMAGE_REF" \
+            --region "$REGION" \
+            --project "$PROJECT" \
+            --quiet
+      - name: Run migrations and wait for completion
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+          MIGRATION_JOB: ${{ vars.CLOUD_RUN_MIGRATION_JOB }}
+        run: gcloud run jobs execute "$MIGRATION_JOB" --region "$REGION" --project "$PROJECT" --wait --quiet
+      - name: Deploy exact image to production
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v3
         with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
           service: ${{ vars.CLOUD_RUN_SERVICE }}
           region: ${{ vars.GCP_REGION }}
-          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}/skillstreak:${{ github.sha }}
-      - name: Verify deployed health endpoint
+          image: ${{ needs.publish.outputs.image_ref }}
+      - name: Verify production health endpoint
         run: curl --fail --retry 5 --retry-delay 3 "${{ steps.deploy.outputs.url }}/healthz"

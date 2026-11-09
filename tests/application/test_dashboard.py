@@ -69,6 +69,29 @@ def test_registered_member_can_select_and_complete_a_system_skill(
 
 
 @pytest.mark.django_db
+def test_selected_skill_completion_awards_xp_and_undoing_removes_it(
+    client, user, system_skill
+) -> None:
+    client.force_login(user)
+    client.post(reverse("toggle-selection", args=[system_skill.id]))
+    user_skill = UserSkill.objects.get(user=user, skill=system_skill)
+
+    client.post(reverse("toggle-completion", args=[user_skill.id]))
+    completed_dashboard = client.get(reverse("dashboard-preview"))
+    assert completed_dashboard.context["progression"].total_xp == 10
+    completed_content = completed_dashboard.content.decode()
+    assert "10 XP" in completed_content
+    assert "10 XP / 20 XP" in completed_content
+    assert 'role="progressbar"' in completed_content
+    assert 'aria-valuenow="10"' in completed_content
+
+    client.post(reverse("toggle-completion", args=[user_skill.id]))
+    undone_dashboard = client.get(reverse("dashboard-preview"))
+    assert undone_dashboard.context["progression"].total_xp == 0
+    assert "0 XP" in undone_dashboard.content.decode()
+
+
+@pytest.mark.django_db
 def test_skill_actions_are_isolated_to_the_signed_in_account(client, user, system_skill) -> None:
     other_user = get_user_model().objects.create_user(
         email="other@csuchico.edu", password="Secure skillstreak password 2026!"

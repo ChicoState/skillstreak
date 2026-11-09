@@ -1,6 +1,6 @@
 # Production application dependencies only. Development and browser tooling stay
 # in requirements.in so they are not copied into the runtime image.
-certifi==2026.10.19
+certifi>=2026.10.19,<2027
 Django==6.1.2
 gunicorn==26.2.0
 psycopg==3.3.6

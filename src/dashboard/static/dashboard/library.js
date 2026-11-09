@@ -1,6 +1,21 @@
 (() => {
   "use strict";
 
+  const timezoneForm = document.querySelector("#timezone-form");
+  if (timezoneForm) {
+    const timezoneInput = timezoneForm.querySelector("#timezone-input");
+    const detectTimezone = () => {
+      try {
+        timezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      } catch {
+        timezoneInput.value = "";
+      }
+    };
+
+    detectTimezone();
+    timezoneForm.addEventListener("submit", detectTimezone);
+  }
+
   const browser = document.querySelector("[data-library-browser]");
   const form = document.querySelector("[data-library-search]");
   if (!browser || !form) {
