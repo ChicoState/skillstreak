@@ -3,5 +3,5 @@
 certifi>=2026.10.19,<2027
 Django==6.1.2
 gunicorn==26.2.0
-psycopg==3.3.6
+psycopg==3.3.8
 certifi==2026.10.19
