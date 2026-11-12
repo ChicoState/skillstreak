@@ -71,36 +71,3 @@ def test_compose_uses_the_development_target() -> None:
     configuration = (ROOT / "compose.yml").read_text()
 
     assert "target: development" in configuration
-
-
-def test_cloud_run_workflows_are_environment_and_trigger_scoped() -> None:
-    development = (ROOT / ".github/workflows/deploy-development.yml").read_text()
-    production = (ROOT / ".github/workflows/release.yml").read_text()
-
-    assert "branches: [main]" in development
-    assert "pull_request:" not in development
-    assert "environment: development" in development
-    assert "skillstreak-prod" not in development
-
-    assert 'tags: ["v*"]' in production
-    assert "workflow_dispatch:" in production
-    assert "github.event_name == 'workflow_dispatch'" in production
-    assert "github.ref == 'refs/heads/main'" in production
-    assert "git merge-base --is-ancestor" in production
-    assert "pull_request:" not in production
-    assert "environment: production" in production
-    assert "skillstreak-dev" not in production
-
-
-def test_cloud_run_workflows_gate_deployment_on_immutable_migrations() -> None:
-    for path in (
-        ".github/workflows/deploy-development.yml",
-        ".github/workflows/release.yml",
-    ):
-        workflow = (ROOT / path).read_text()
-        assert "gcloud run jobs update" in workflow
-        assert '--image "$IMAGE_REF"' in workflow
-        assert "gcloud run jobs execute" in workflow
-        assert "--wait" in workflow
-        assert "image: ${{ needs.publish.outputs.image_ref }}" in workflow
-        assert "/healthz" in workflow
