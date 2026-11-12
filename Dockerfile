@@ -44,7 +44,13 @@ RUN python -m pip install --no-cache-dir "pip==26.2.2" \
     && useradd --uid 10001 --gid app --create-home app
 COPY --from=builder /install /usr/local
 COPY --chown=app:app . .
-RUN chown app:app /app
+RUN DJANGO_SETTINGS_MODULE=skillstreak.settings.production \
+    DJANGO_SECRET_KEY=build-only-static-collection-key-not-used-at-runtime \
+    ALLOWED_HOSTS=localhost \
+    CSRF_TRUSTED_ORIGINS=https://localhost \
+    DATABASE_URL=postgresql:///build?host=/tmp/build-postgres-socket \
+    python manage.py collectstatic --noinput \
+    && chown --recursive app:app /app
 USER app
 
 EXPOSE 8000

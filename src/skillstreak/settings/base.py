@@ -1,8 +1,9 @@
 """Shared Django settings for every SkillStreak environment."""
 
 import os
+import re
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -50,6 +51,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
@@ -68,17 +70,57 @@ AUTH_PASSWORD_VALIDATORS = [
 
 def database_configuration(database_url: str) -> dict[str, dict[str, str | int]]:
     """Convert a PostgreSQL URL into Django's database configuration."""
-    parsed_url = urlparse(database_url)
-    if parsed_url.scheme not in {"postgres", "postgresql"} or not parsed_url.path:
+    try:
+        parsed_url = urlparse(database_url)
+        query = parse_qs(parsed_url.query)
+    except ValueError as error:
+        raise ImproperlyConfigured("DATABASE_URL is not a valid PostgreSQL URL.") from error
+    if (
+        parsed_url.scheme not in {"postgres", "postgresql"}
+        or not parsed_url.path
+        or parsed_url.fragment
+    ):
         raise ImproperlyConfigured("DATABASE_URL must be a PostgreSQL connection URL.")
+    socket_path = query.get("host", [None])[0]
+    host = parsed_url.hostname or ""
+    if socket_path:
+        if host or not socket_path.startswith("/"):
+            raise ImproperlyConfigured("DATABASE_URL has an invalid Unix socket host.")
+        host = socket_path
+    if not host and not socket_path:
+        raise ImproperlyConfigured("DATABASE_URL must include a database host.")
     return {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": unquote(parsed_url.path.lstrip("/")),
             "USER": unquote(parsed_url.username or ""),
             "PASSWORD": unquote(parsed_url.password or ""),
-            "HOST": parsed_url.hostname or "",
+            "HOST": host,
             "PORT": parsed_url.port or "",
+        }
+    }
+
+
+def cloud_sql_database_configuration(
+    connection_name: str, database_name: str, username: str, password: str
+) -> dict[str, dict[str, str | int]]:
+    """Build PostgreSQL settings for a Cloud SQL Auth Proxy Unix socket."""
+    if not re.fullmatch(r"[^/:]+:[^/:]+:[^/:]+", connection_name):
+        raise ImproperlyConfigured(
+            "CLOUD_SQL_CONNECTION_NAME must be in project:region:instance format."
+        )
+    if not database_name or not username or not password:
+        raise ImproperlyConfigured(
+            "CLOUD_SQL_DATABASE, CLOUD_SQL_USER, and CLOUD_SQL_PASSWORD must be set."
+        )
+    return {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": database_name,
+            "USER": username,
+            "PASSWORD": password,
+            "HOST": f"/cloudsql/{connection_name}",
+            "PORT": "5432",
         }
     }
 
