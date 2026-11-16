@@ -11,7 +11,12 @@ from django.utils import timezone
 
 from skills.forms import SkillForm, TimezoneForm
 from skills.models import Skill as OwnedSkill
-from skills.progression import TimezoneNotConfigured, local_date_for_user, progression_for_user
+from skills.progression import (
+    TimezoneNotConfigured,
+    local_date_for_user,
+    progression_for_selected_skill,
+    progression_for_user,
+)
 from tracking.library import (
     archived_private_skills,
     available_library_skills,
@@ -260,6 +265,7 @@ def preview(request: HttpRequest) -> HttpResponse:
                 "user_skill": item,
                 "today_completed": item.id in completed_today,
                 "is_missed": item.id in active_missed_skill_ids,
+                "skill_progression": progression_for_selected_skill(item),
             }
             for item in active_skills
         ]

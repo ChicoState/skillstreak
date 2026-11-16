@@ -422,8 +422,11 @@ def test_dashboard_landing_lists_all_active_skills_and_dashboard_link_returns_th
 ) -> None:
     first_skill = Skill.objects.create(slug="first-skill", name="First skill")
     second_skill = Skill.objects.create(slug="second-skill", name="Second skill")
-    UserSkill.objects.create(user=user, skill=first_skill, started_on=timezone.localdate())
+    first_user_skill = UserSkill.objects.create(
+        user=user, skill=first_skill, started_on=timezone.localdate()
+    )
     UserSkill.objects.create(user=user, skill=second_skill, started_on=timezone.localdate())
+    DailyCompletion.objects.create(user_skill=first_user_skill, completed_on=timezone.localdate())
     client.force_login(user)
 
     response = client.get(reverse("dashboard-preview"))
@@ -434,6 +437,10 @@ def test_dashboard_landing_lists_all_active_skills_and_dashboard_link_returns_th
         first_skill,
         second_skill,
     ]
+    assert response.context["landing_cards"][0]["skill_progression"].total_xp == 10
+    assert response.context["landing_cards"][0]["skill_progression"].level == 1
+    assert response.context["landing_cards"][1]["skill_progression"].total_xp == 0
+    assert "Skill level 1" in content
     assert 'href="/#skills"' in content
     assert content.count('class="landing-skill-card"') == 2
 
