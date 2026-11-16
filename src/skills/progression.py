@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.db import transaction
 from django.utils import timezone
 
-from tracking.models import DailyCompletion
+from tracking.models import DailyCompletion, UserSkill
 
 from .models import Completion, Skill, SkillSchedule
 
@@ -50,6 +50,33 @@ class Progression:
         return min(100, int(self.total_xp * 100 / self.next_level_xp))
 
 
+@dataclass(frozen=True)
+class SkillProgression:
+    """Derived XP and level values for one skill."""
+
+    completion_count: int
+    total_xp: int
+    level: int
+    level_start_xp: int
+    next_level_xp: int | None
+
+    @property
+    def progress_percent(self) -> int:
+        """Return whole-number progress through the current skill level."""
+        if self.next_level_xp is None:
+            return 100
+
+        level_span = self.next_level_xp - self.level_start_xp
+        return int((self.total_xp - self.level_start_xp) * 100 / level_span)
+
+    @property
+    def xp_progress_percent(self) -> int:
+        """Return cumulative XP progress toward the next skill threshold."""
+        if self.next_level_xp is None:
+            return 100
+        return min(100, int(self.total_xp * 100 / self.next_level_xp))
+
+
 def level_threshold(level: int) -> int:
     """Return the cumulative XP required to reach a level."""
     if not 0 <= level <= MAX_LEVEL:
@@ -68,6 +95,31 @@ def level_for_xp(total_xp: int) -> int:
         if total_xp < level_threshold(level):
             return level - 1
     return MAX_LEVEL
+
+
+def _skill_progression_for_count(completion_count: int) -> SkillProgression:
+    total_xp = completion_count * XP_PER_COMPLETION
+    level = level_for_xp(total_xp)
+    next_level = level + 1 if level < MAX_LEVEL else None
+    return SkillProgression(
+        completion_count=completion_count,
+        total_xp=total_xp,
+        level=level,
+        level_start_xp=level_threshold(level),
+        next_level_xp=level_threshold(next_level) if next_level else None,
+    )
+
+
+def progression_for_owned_skill(skill: Skill) -> SkillProgression:
+    """Derive progression from one account-owned skill's completions."""
+    completion_count = Completion.objects.filter(skill=skill).count()
+    return _skill_progression_for_count(completion_count)
+
+
+def progression_for_selected_skill(user_skill: UserSkill) -> SkillProgression:
+    """Derive progression from one member's selected-skill completions."""
+    completion_count = DailyCompletion.objects.filter(user_skill=user_skill).count()
+    return _skill_progression_for_count(completion_count)
 
 
 def progression_for_user(user) -> Progression:

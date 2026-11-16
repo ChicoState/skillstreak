@@ -137,8 +137,10 @@ def test_member_can_choose_one_tracker_from_the_dashboard_sidebar(live_server) -
 
         expect(page.locator(".landing-skill-card")).to_have_count(2)
         walk_card = page.locator(".landing-skill-card", has_text="Take a Walk")
+        expect(walk_card).to_contain_text("Skill level 0")
         walk_card.get_by_role("button", name="Mark Take a Walk complete today").click()
         expect(page).to_have_url(f"{live_server.url}/")
+        expect(walk_card).to_contain_text("Skill level 1")
         expect(
             walk_card.get_by_role("button", name="Undo Take a Walk completion for today")
         ).to_be_visible()
@@ -153,6 +155,10 @@ def test_member_can_choose_one_tracker_from_the_dashboard_sidebar(live_server) -
         expect(page).to_have_url(f"{live_server.url}/?skill={second_user_skill.id}#skills")
         expect(page.locator(".skill-detail")).to_have_count(1)
         expect(page.locator(".skill-detail")).to_contain_text("Take a Walk")
+        expect(page.locator(".skill-detail")).to_contain_text("Skill level 0")
+        expect(
+            page.get_by_role("progressbar", name="Skill XP progress toward level 1")
+        ).to_be_visible()
         page.get_by_role("link", name="Dashboard", exact=True).click()
         expect(page).to_have_url(f"{live_server.url}/#skills")
         expect(page.locator(".landing-skill-card")).to_have_count(2)

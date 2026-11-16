@@ -77,16 +77,20 @@ def test_selected_skill_completion_awards_xp_and_undoing_removes_it(
     user_skill = UserSkill.objects.get(user=user, skill=system_skill)
 
     client.post(reverse("toggle-completion", args=[user_skill.id]))
-    completed_dashboard = client.get(reverse("dashboard-preview"))
+    completed_dashboard = client.get(reverse("dashboard-preview"), {"skill": user_skill.id})
     assert completed_dashboard.context["progression"].total_xp == 10
+    assert completed_dashboard.context["selected_card"]["skill_progression"].total_xp == 10
+    assert completed_dashboard.context["selected_card"]["skill_progression"].level == 1
     completed_content = completed_dashboard.content.decode()
     assert "10 XP" in completed_content
     assert "10 XP / 20 XP" in completed_content
+    assert "Skill level 1" in completed_content
+    assert "Skill XP progress toward level 2" in completed_content
     assert 'role="progressbar"' in completed_content
     assert 'aria-valuenow="10"' in completed_content
 
     client.post(reverse("toggle-completion", args=[user_skill.id]))
-    undone_dashboard = client.get(reverse("dashboard-preview"))
+    undone_dashboard = client.get(reverse("dashboard-preview"), {"skill": user_skill.id})
     assert undone_dashboard.context["progression"].total_xp == 0
     assert "0 XP" in undone_dashboard.content.decode()
 
@@ -422,8 +426,11 @@ def test_dashboard_landing_lists_all_active_skills_and_dashboard_link_returns_th
 ) -> None:
     first_skill = Skill.objects.create(slug="first-skill", name="First skill")
     second_skill = Skill.objects.create(slug="second-skill", name="Second skill")
-    UserSkill.objects.create(user=user, skill=first_skill, started_on=timezone.localdate())
+    first_user_skill = UserSkill.objects.create(
+        user=user, skill=first_skill, started_on=timezone.localdate()
+    )
     UserSkill.objects.create(user=user, skill=second_skill, started_on=timezone.localdate())
+    DailyCompletion.objects.create(user_skill=first_user_skill, completed_on=timezone.localdate())
     client.force_login(user)
 
     response = client.get(reverse("dashboard-preview"))
@@ -434,6 +441,10 @@ def test_dashboard_landing_lists_all_active_skills_and_dashboard_link_returns_th
         first_skill,
         second_skill,
     ]
+    assert response.context["landing_cards"][0]["skill_progression"].total_xp == 10
+    assert response.context["landing_cards"][0]["skill_progression"].level == 1
+    assert response.context["landing_cards"][1]["skill_progression"].total_xp == 0
+    assert "Skill level 1" in content
     assert 'href="/#skills"' in content
     assert content.count('class="landing-skill-card"') == 2
 
