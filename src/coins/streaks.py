@@ -188,7 +188,9 @@ def next_overall_reward(user, *, as_of: date) -> OverallRewardProjection | None:
         default=None,
     )
     current = skill_streak(current_skill, as_of=as_of).current_occurrences if current_skill else 0
-    cycle_start = skill_streak(current_skill, as_of=as_of).cycle_start if current_skill else as_of
+    cycle_start = (
+        skill_streak(current_skill, as_of=as_of).cycle_start or as_of if current_skill else as_of
+    )
     milestone = next(
         (
             value
@@ -203,7 +205,7 @@ def next_overall_reward(user, *, as_of: date) -> OverallRewardProjection | None:
     amount = OVERALL_MILESTONES[milestone]
     projection = next_skill_reward(current_skill, as_of=as_of) if current_skill else None
     return OverallRewardProjection(
-        milestone_occurrences=milestone,
+        milestone_weeks=milestone,
         amount=amount,
         projected_date=projection.projected_date if projection else None,
         current_occurrences=current,

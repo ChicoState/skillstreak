@@ -5,7 +5,7 @@ from datetime import date
 import pytest
 from django.contrib.auth import get_user_model
 
-from coins.streaks import next_skill_reward, skill_streak
+from coins.streaks import next_overall_reward, next_skill_reward, skill_streak
 from tracking.models import DailyCompletion, Skill, UserSkill, UserSkillSchedule
 
 
@@ -73,3 +73,16 @@ def test_weekly_target_schedule_counts_each_completion_as_an_occurrence(user):
     summary = skill_streak(user_skill, as_of=date(2026, 1, 7))
 
     assert summary.current_occurrences == 2
+
+
+@pytest.mark.django_db
+def test_overall_reward_projection_handles_a_skill_with_no_completions(user):
+    skill = Skill.objects.create(
+        slug="new-skill", name="New Skill", visibility=Skill.Visibility.SYSTEM
+    )
+    UserSkill.objects.create(user=user, skill=skill, started_on=date(2026, 1, 5))
+
+    reward = next_overall_reward(user, as_of=date(2026, 1, 5))
+
+    assert reward is not None
+    assert reward.milestone_weeks == 1
