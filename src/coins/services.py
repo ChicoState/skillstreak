@@ -83,15 +83,24 @@ def award_progression_rewards(user, user_skill=None, *, as_of=None) -> None:
             milestone_weeks=milestone,
         )
 
-    current_overall = max(
-        (
-            skill_streak(item, as_of=reward_date).current_occurrences
-            for item in UserSkill.objects.filter(user=user, is_active=True)
-        ),
-        default=0,
+    active_skills = list(UserSkill.objects.filter(user=user, is_active=True))
+    current_overall_skill = max(
+        active_skills,
+        key=lambda item: skill_streak(item, as_of=reward_date).current_occurrences,
+        default=None,
     )
+    if current_overall_skill is None:
+        return
+    current_overall_summary = skill_streak(current_overall_skill, as_of=reward_date)
+    current_overall = current_overall_summary.current_occurrences
+    if current_overall_summary.cycle_start is None:
+        return
     for milestone, amount in OVERALL_MILESTONES.items():
-        if current_overall >= milestone:
+        if current_overall >= milestone_occurrences(
+            current_overall_skill,
+            milestone,
+            cycle_start=current_overall_summary.cycle_start,
+        ):
             award_coins(
                 user,
                 amount,

@@ -1,5 +1,7 @@
 """Selected-skill dashboard behavior for registered team accounts."""
 
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
@@ -100,10 +102,17 @@ def test_selected_skill_completion_creates_idempotent_coin_awards(client, user, 
     client.force_login(user)
     client.post(reverse("toggle-selection", args=[system_skill.id]))
     user_skill = UserSkill.objects.get(user=user, skill=system_skill)
+    user_skill.started_on = timezone.localdate() - timedelta(days=6)
+    user_skill.save(update_fields=["started_on"])
+    for offset in range(1, 7):
+        DailyCompletion.objects.create(
+            user_skill=user_skill,
+            completed_on=timezone.localdate() - timedelta(days=offset),
+        )
 
     client.post(reverse("toggle-completion", args=[user_skill.id]))
 
-    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.LEVEL_UP).count() == 1
+    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.LEVEL_UP).count() == 4
     assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.SKILL_STREAK).count() == 1
     assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.OVERALL_STREAK).count() == 1
 

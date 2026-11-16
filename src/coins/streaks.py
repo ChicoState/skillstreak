@@ -62,10 +62,22 @@ def _is_scheduled(schedule: UserSkillSchedule, on_date: date) -> bool:
 
 
 def _scheduled_dates(user_skill: UserSkill, start: date, end: date) -> list[date]:
+    schedules = list(user_skill.userskillschedule_set.all())
+    if not schedules:
+        return [start + timedelta(days=offset) for offset in range((end - start).days + 1)]
+
     dates: list[date] = []
     current = start
     while current <= end:
-        schedule = _active_schedule(user_skill, current)
+        schedule = next(
+            (
+                item
+                for item in schedules
+                if item.effective_from <= current
+                and (item.effective_through is None or item.effective_through >= current)
+            ),
+            None,
+        )
         if schedule is None or _is_scheduled(schedule, current):
             dates.append(current)
         current += timedelta(days=1)

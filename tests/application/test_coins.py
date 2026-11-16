@@ -1,5 +1,7 @@
 """Tests for the immutable user coin ledger."""
 
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -52,12 +54,16 @@ def test_completion_rewards_are_idempotent_and_include_level_and_streak_awards(u
         rule_type=UserSkillSchedule.RuleType.DAILY,
         effective_from=user_skill.started_on,
     )
-    DailyCompletion.objects.create(user_skill=user_skill, completed_on=user_skill.started_on)
+    for offset in range(7):
+        DailyCompletion.objects.create(
+            user_skill=user_skill,
+            completed_on=user_skill.started_on + timedelta(days=offset),
+        )
 
-    award_progression_rewards(user, user_skill, as_of=user_skill.started_on)
-    award_progression_rewards(user, user_skill, as_of=user_skill.started_on)
+    award_progression_rewards(user, user_skill, as_of=user_skill.started_on + timedelta(days=6))
+    award_progression_rewards(user, user_skill, as_of=user_skill.started_on + timedelta(days=6))
 
-    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.LEVEL_UP).count() == 1
+    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.LEVEL_UP).count() == 4
     assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.SKILL_STREAK).count() == 1
     assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.OVERALL_STREAK).count() == 1
 
