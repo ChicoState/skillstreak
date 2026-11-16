@@ -121,6 +121,24 @@ def test_selected_skill_progression_counts_only_that_member_skill_history() -> N
 
 
 @pytest.mark.django_db
+def test_archived_selected_skill_retains_historical_progression() -> None:
+    user = create_user("archived-skill-progress@csuchico.edu")
+    skill = TrackingSkill.objects.create(slug="archived-read", name="Archived Read")
+    user_skill = UserSkill.objects.create(
+        user=user,
+        skill=skill,
+        started_on=date(2026, 10, 1),
+        is_active=False,
+    )
+    DailyCompletion.objects.create(user_skill=user_skill, completed_on=date(2026, 10, 21))
+
+    progression = progression_for_selected_skill(user_skill)
+
+    assert progression.total_xp == 10
+    assert progression.level == 1
+
+
+@pytest.mark.django_db
 def test_skill_progression_reaches_level_cap_without_capping_xp() -> None:
     user = create_user("skill-cap-progress@csuchico.edu")
     skill = Skill.objects.create(owner=user, name="Practice Spanish")

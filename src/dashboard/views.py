@@ -232,6 +232,7 @@ def preview(request: HttpRequest) -> HttpResponse:
         weekly_count = sum(day["complete"] for day in days)
         selected_card = {
             "user_skill": selected_user_skill,
+            "skill_progression": progression_for_selected_skill(selected_user_skill),
             "days": days,
             "today_completed": today in completed,
             "progress_text": (
