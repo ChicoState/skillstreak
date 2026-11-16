@@ -11,6 +11,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
+from coins.services import award_progression_rewards
+
 from .forms import CustomSkillForm
 from .library import archived_private_skills, available_library_skills, normalize_library_query
 from .models import (
@@ -251,6 +253,7 @@ def toggle_completion(request: HttpRequest, user_skill_id: int) -> HttpResponse:
                 user_skill=user_skill,
                 closed_at__isnull=True,
             ).update(closed_at=timezone.now())
+            award_progression_rewards(request.user, user_skill)
         else:
             completion.delete()
     if request.POST.get("return_view") == "dashboard":

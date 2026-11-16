@@ -9,6 +9,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from coins.services import coin_balance
+from coins.streaks import next_overall_reward, next_skill_reward
 from skills.forms import SkillForm, TimezoneForm
 from skills.models import Skill as OwnedSkill
 from skills.progression import TimezoneNotConfigured, local_date_for_user, progression_for_user
@@ -58,6 +60,7 @@ def progression_context(request: HttpRequest, extra: dict | None = None) -> dict
     user = request.user
     context = {
         "progression": progression_for_user(user),
+        "coin_balance": coin_balance(user),
         "skill_form": SkillForm(),
         "timezone_form": TimezoneForm(),
         "completion_form": None,
@@ -239,6 +242,7 @@ def preview(request: HttpRequest) -> HttpResponse:
             ),
             "calendar_weeks": month_calendar(today, selected_user_skill.started_on, completed),
             "is_missed": selected_user_skill.id in active_missed_skill_ids,
+            "next_reward": next_skill_reward(selected_user_skill, as_of=today),
         }
         selected_card.update(
             schedule_details(
@@ -260,6 +264,7 @@ def preview(request: HttpRequest) -> HttpResponse:
                 "user_skill": item,
                 "today_completed": item.id in completed_today,
                 "is_missed": item.id in active_missed_skill_ids,
+                "next_reward": next_skill_reward(item, as_of=today),
             }
             for item in active_skills
         ]
@@ -322,6 +327,7 @@ def preview(request: HttpRequest) -> HttpResponse:
         "theme": theme,
         "active_missed_skill_ids": active_missed_skill_ids,
         "active_skill_ids": {item.skill_id for item in active_skills},
+        "overall_reward": next_overall_reward(request.user, as_of=today),
     }
     return render(
         request,

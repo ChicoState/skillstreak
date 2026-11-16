@@ -6,6 +6,7 @@ from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
+from coins.models import CoinLedgerEntry, CoinReason
 from tracking.models import (
     DailyCompletion,
     Skill,
@@ -66,6 +67,9 @@ def test_registered_member_can_select_and_complete_a_system_skill(
     assert "Your check-ins" in dashboard
     assert "Completion history" in dashboard
     assert "Completed today — undo" in dashboard
+    assert "Coins" in dashboard
+    assert "Next streak reward" in dashboard
+    assert "data-countdown" in dashboard
 
 
 @pytest.mark.django_db
@@ -89,6 +93,19 @@ def test_selected_skill_completion_awards_xp_and_undoing_removes_it(
     undone_dashboard = client.get(reverse("dashboard-preview"))
     assert undone_dashboard.context["progression"].total_xp == 0
     assert "0 XP" in undone_dashboard.content.decode()
+
+
+@pytest.mark.django_db
+def test_selected_skill_completion_creates_idempotent_coin_awards(client, user, system_skill):
+    client.force_login(user)
+    client.post(reverse("toggle-selection", args=[system_skill.id]))
+    user_skill = UserSkill.objects.get(user=user, skill=system_skill)
+
+    client.post(reverse("toggle-completion", args=[user_skill.id]))
+
+    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.LEVEL_UP).count() == 1
+    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.SKILL_STREAK).count() == 1
+    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.OVERALL_STREAK).count() == 1
 
 
 @pytest.mark.django_db

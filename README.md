@@ -42,6 +42,12 @@ completion tracking, reminders, and dashboard progression.
    docker compose exec web python manage.py seed_system_skills
    ```
 
+   For a local presentation, seed a demo coin balance for a registered account:
+
+   ```sh
+   docker compose exec web python manage.py grant_demo_coins --email you@csuchico.edu --amount 100
+   ```
+
    The application listens at `http://localhost:8000` by default. Register an
    internal account, then use the dashboard to select or create skills.
 

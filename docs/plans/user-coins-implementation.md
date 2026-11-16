@@ -15,13 +15,13 @@
 
 ## Ordered Tasks
 
-1. Add the coin ledger, reward constants, and unit/integration tests for balance
+1. [x] Add the coin ledger, reward constants, and unit/integration tests for balance
    and idempotent awards.
-2. Add scheduled-occurrence streak calculations and tests for daily, weekly, and
+2. [x] Add scheduled-occurrence streak calculations and tests for daily, weekly, and
    monthly schedules, including repeatable milestones.
-3. Connect automatic awards to both completion mutation paths and level changes;
+3. [x] Connect automatic awards to both completion mutation paths and level changes;
    add demo grant management command and tests.
-4. Add dashboard balance and per-skill/overall reward countdown context and
+4. [x] Add dashboard balance and per-skill/overall reward countdown context and
    presentation, then verify the authenticated browser flow.
 
 ## Verification Checkpoints

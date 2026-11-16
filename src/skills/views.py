@@ -6,6 +6,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
+from coins.services import award_progression_rewards
 from dashboard.views import dashboard_context
 
 from .forms import CompletionForm, SkillForm, TimezoneForm
@@ -64,7 +65,10 @@ def toggle_skill_completion(request: HttpRequest, skill_id: int) -> HttpResponse
         return invalid_dashboard_response(request, {"completion_form": form})
 
     try:
-        toggle_completion(skill, form.cleaned_data["completed_on"])
+        with transaction.atomic():
+            created = toggle_completion(skill, form.cleaned_data["completed_on"])
+            if created:
+                award_progression_rewards(request.user)
     except (CompletionEligibilityError, TimezoneNotConfigured) as error:
         form.add_error(None, str(error))
         return invalid_dashboard_response(request, {"completion_form": form})
