@@ -1,6 +1,6 @@
 """Tests for XP, level, timezone, and completion progression rules."""
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -12,9 +12,13 @@ from skills.progression import (
     level_for_xp,
     level_threshold,
     local_date_for_user,
+    progression_for_owned_skill,
+    progression_for_selected_skill,
     progression_for_user,
     toggle_completion,
 )
+from tracking.models import DailyCompletion, UserSkill
+from tracking.models import Skill as TrackingSkill
 
 
 def create_user(email: str, timezone_name: str | None = "UTC") -> object:
@@ -76,6 +80,63 @@ def test_progression_is_derived_from_completion_history() -> None:
     assert progression.next_level_xp == 40
     assert progression.progress_percent == 0
     assert progression.xp_progress_percent == 50
+
+
+@pytest.mark.django_db
+def test_owned_skill_progression_is_derived_from_its_completion_history() -> None:
+    user = create_user("owned-skill-progress@csuchico.edu")
+    skill = Skill.objects.create(owner=user, name="Practice Spanish")
+    Completion.objects.create(skill=skill, completed_on=date(2026, 10, 21))
+    Completion.objects.create(skill=skill, completed_on=date(2026, 10, 22))
+
+    progression = progression_for_owned_skill(skill)
+
+    assert progression.completion_count == 2
+    assert progression.total_xp == 20
+    assert progression.level == 2
+    assert progression.level_start_xp == 20
+    assert progression.next_level_xp == 40
+    assert progression.progress_percent == 0
+    assert progression.xp_progress_percent == 50
+
+
+@pytest.mark.django_db
+def test_selected_skill_progression_counts_only_that_member_skill_history() -> None:
+    user = create_user("selected-skill-progress@csuchico.edu")
+    other_user = create_user("other-selected-progress@csuchico.edu")
+    skill = TrackingSkill.objects.create(slug="read", name="Read")
+    user_skill = UserSkill.objects.create(user=user, skill=skill, started_on=date(2026, 10, 1))
+    other_selection = UserSkill.objects.create(
+        user=other_user, skill=skill, started_on=date(2026, 10, 1)
+    )
+    DailyCompletion.objects.create(user_skill=user_skill, completed_on=date(2026, 10, 21))
+    DailyCompletion.objects.create(user_skill=user_skill, completed_on=date(2026, 10, 22))
+    DailyCompletion.objects.create(user_skill=other_selection, completed_on=date(2026, 10, 23))
+
+    progression = progression_for_selected_skill(user_skill)
+
+    assert progression.completion_count == 2
+    assert progression.total_xp == 20
+    assert progression.level == 2
+
+
+@pytest.mark.django_db
+def test_skill_progression_reaches_level_cap_without_capping_xp() -> None:
+    user = create_user("skill-cap-progress@csuchico.edu")
+    skill = Skill.objects.create(owner=user, name="Practice Spanish")
+    for completion_number in range(4_852):
+        Completion.objects.create(
+            skill=skill, completed_on=date(2000, 1, 1) + timedelta(days=completion_number)
+        )
+
+    progression = progression_for_owned_skill(skill)
+
+    assert progression.completion_count == 4_852
+    assert progression.total_xp == 48_520
+    assert progression.level == 99
+    assert progression.next_level_xp is None
+    assert progression.progress_percent == 100
+    assert progression.xp_progress_percent == 100
 
 
 @pytest.mark.django_db
