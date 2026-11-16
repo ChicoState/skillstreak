@@ -52,7 +52,7 @@ def test_next_skill_reward_projects_from_future_non_daily_occurrences(user):
 
     reward = next_skill_reward(user_skill, as_of=date(2026, 1, 5))
 
-    assert reward.milestone_occurrences == 2
+    assert reward.milestone_weeks == 1
     assert reward.projected_date == date(2026, 1, 7)
 
 

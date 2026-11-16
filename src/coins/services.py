@@ -7,7 +7,7 @@ from skills.progression import progression_for_user
 
 from .models import CoinLedgerEntry, CoinReason
 from .rewards import INDIVIDUAL_MILESTONES, LEVEL_UP_REWARD, OVERALL_MILESTONES
-from .streaks import skill_streak
+from .streaks import milestone_occurrences, skill_streak
 
 
 @transaction.atomic
@@ -64,7 +64,9 @@ def award_progression_rewards(user, user_skill=None, *, as_of=None) -> None:
 
     summary = skill_streak(user_skill, as_of=reward_date)
     for milestone, amount in INDIVIDUAL_MILESTONES.items():
-        if summary.current_occurrences < milestone:
+        if summary.cycle_start is None or summary.current_occurrences < milestone_occurrences(
+            user_skill, milestone, cycle_start=summary.cycle_start
+        ):
             continue
         if milestone % 2:
             event_key = f"{user.pk}:skill:{user_skill.pk}:once:{milestone}"

@@ -19,14 +19,14 @@ class StreakSummary:
 
 @dataclass(frozen=True)
 class SkillRewardProjection:
-    milestone_occurrences: int
+    milestone_weeks: int
     amount: int
     projected_date: date | None
 
 
 @dataclass(frozen=True)
 class OverallRewardProjection:
-    milestone_occurrences: int
+    milestone_weeks: int
     amount: int
     projected_date: date | None
     current_occurrences: int
@@ -99,6 +99,17 @@ def skill_streak(user_skill: UserSkill, *, as_of: date) -> StreakSummary:
     return StreakSummary(streak, cycle_start)
 
 
+def milestone_occurrences(user_skill: UserSkill, weeks: int, *, cycle_start: date) -> int:
+    """Translate a calendar-week reward into scheduled occurrences."""
+    schedule = _active_schedule(user_skill, cycle_start)
+    if schedule and schedule.rule_type == UserSkillSchedule.RuleType.DAYS_PER_WEEK:
+        return schedule.target_days_per_week * weeks
+    if schedule and schedule.rule_type == UserSkillSchedule.RuleType.DAYS_PER_MONTH:
+        return max(1, round(schedule.target_days_per_month * weeks * 7 / 30))
+    end = cycle_start + timedelta(days=weeks * 7 - 1)
+    return len(_scheduled_dates(user_skill, cycle_start, end))
+
+
 def _flexible_period_streak(
     user_skill: UserSkill,
     completed: set[date],
@@ -141,8 +152,15 @@ def _flexible_period_streak(
 
 def next_skill_reward(user_skill: UserSkill, *, as_of: date) -> SkillRewardProjection | None:
     summary = skill_streak(user_skill, as_of=as_of)
+    cycle_start = summary.cycle_start or as_of
     milestone = next(
-        (value for value in INDIVIDUAL_MILESTONES if value > summary.current_occurrences), None
+        (
+            value
+            for value in INDIVIDUAL_MILESTONES
+            if milestone_occurrences(user_skill, value, cycle_start=cycle_start)
+            > summary.current_occurrences
+        ),
+        None,
     )
     if milestone is None:
         milestone = max(INDIVIDUAL_MILESTONES) + 2
@@ -152,7 +170,10 @@ def next_skill_reward(user_skill: UserSkill, *, as_of: date) -> SkillRewardProje
         as_of + timedelta(days=1),
         as_of + timedelta(days=MAX_PROJECTION_DAYS),
     )
-    remaining = milestone - summary.current_occurrences
+    remaining = (
+        milestone_occurrences(user_skill, milestone, cycle_start=cycle_start)
+        - summary.current_occurrences
+    )
     projected_date = dates[remaining - 1] if len(dates) >= remaining else None
     return SkillRewardProjection(milestone, amount, projected_date)
 
@@ -167,7 +188,16 @@ def next_overall_reward(user, *, as_of: date) -> OverallRewardProjection | None:
         default=None,
     )
     current = skill_streak(current_skill, as_of=as_of).current_occurrences if current_skill else 0
-    milestone = next((value for value in OVERALL_MILESTONES if value > current), None)
+    cycle_start = skill_streak(current_skill, as_of=as_of).cycle_start if current_skill else as_of
+    milestone = next(
+        (
+            value
+            for value in OVERALL_MILESTONES
+            if current_skill
+            and milestone_occurrences(current_skill, value, cycle_start=cycle_start) > current
+        ),
+        None,
+    )
     if milestone is None:
         return None
     amount = OVERALL_MILESTONES[milestone]
