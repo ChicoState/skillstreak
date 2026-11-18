@@ -229,6 +229,11 @@ h3 { margin-bottom: .18rem; font-size: 1.1rem; }
 .progress-caption { margin: 0; color: #d3e4d6; font-size: .8rem; white-space: nowrap; }
 .overview-progress { min-width: 6rem; margin: 0; color: #d3e4d6; font-size: .875rem; text-align: right; }
 .overview-progress strong { display: block; color: white; font-size: 1.5rem; }
+.overview-rewards { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: 1.25rem; border-top: 1px solid #426a56; padding-top: 1rem; }
+.overview-rewards p { margin: 0; color: #d3e4d6; font-size: .8rem; }
+.overview-rewards strong { display: block; color: white; font-size: 1.25rem; }
+.overview-rewards time, .coin-reward-callout time, .landing-next-reward time { display: block; color: var(--sun); font-size: .78rem; }
+.coin-balance strong { color: #f6c76e; }
 
 .section-heading { align-items: end; margin: 2.5rem 0 1rem; }
 .section-heading h2 { margin-bottom: 0; }
@@ -244,6 +249,7 @@ h3 { margin-bottom: .18rem; font-size: 1.1rem; }
 .landing-skill-card { display: grid; gap: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1rem; }
 .landing-skill-card h3 { margin-bottom: .25rem; }
 .landing-skill-card p { margin-bottom: 0; color: var(--muted); font-size: .875rem; }
+.landing-next-reward { margin-top: .8rem; }
 .landing-skill-footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: var(--muted); font-size: .8rem; font-weight: 750; }
 .landing-skill-footer form { margin: 0; }
 .landing-completion-button { white-space: nowrap; }
@@ -258,6 +264,8 @@ h3 { margin-bottom: .18rem; font-size: 1.1rem; }
 .detail-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1rem; }
 .detail-summary > div { min-width: 0; }
 .detail-summary strong { display: block; line-height: 1.4; }
+.coin-reward-callout { margin: 0; border-left: .25rem solid var(--sun); background: #fff8e8; padding: .75rem 1rem; color: var(--ink); font-size: .875rem; }
+.coin-reward-callout strong { display: block; }
 .detail-week, .detail-calendar { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1.25rem; }
 .detail-section-heading { align-items: center; margin-bottom: 1rem; }
 .detail-section-heading h2 { margin-bottom: 0; }

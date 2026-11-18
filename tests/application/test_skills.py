@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import Client
 
+from coins.models import CoinLedgerEntry, CoinReason
 from skills.models import Completion, Skill, SkillSchedule
 
 
@@ -133,6 +134,7 @@ def test_member_can_toggle_an_eligible_completion(client) -> None:
     assert response.status_code == 302
     assert response.url == "/"
     assert Completion.objects.filter(skill=skill, completed_on=today).exists()
+    assert CoinLedgerEntry.objects.filter(user=user, reason=CoinReason.LEVEL_UP).count() == 1
 
 
 @pytest.mark.django_db

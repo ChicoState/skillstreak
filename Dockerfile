@@ -20,6 +20,9 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 WORKDIR /app
 
 COPY requirements.txt ./
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 RUN python -m pip install --requirement requirements.txt \
     && python -m playwright install --with-deps chromium \
     && groupadd --gid 10001 app \

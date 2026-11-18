@@ -16,11 +16,25 @@
     timezoneForm.addEventListener("submit", detectTimezone);
   }
 
+  const countdowns = document.querySelectorAll("[data-countdown]");
+  const updateCountdowns = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    countdowns.forEach((countdown) => {
+      const awardDate = new Date(`${countdown.dataset.awardDate}T00:00:00`);
+      const days = Math.max(0, Math.ceil((awardDate - today) / 86400000));
+      countdown.textContent = days === 0 ? "Today" : `in ${days} day${days === 1 ? "" : "s"}`;
+      countdown.setAttribute("aria-label", `Coin reward available ${days === 0 ? "today" : `in ${days} days`}`);
+    });
+  };
+  updateCountdowns();
+  if (countdowns.length) {
+    window.setInterval(updateCountdowns, 60000);
+  }
+
   const browser = document.querySelector("[data-library-browser]");
   const form = document.querySelector("[data-library-search]");
-  if (!browser || !form) {
-    return;
-  }
+  if (!browser || !form) return;
 
   const input = form.querySelector("input[name='q']");
   const tagSelect = form.querySelector("[data-library-tag]");
