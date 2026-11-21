@@ -1,5 +1,6 @@
 """Authenticated profile settings views."""
 
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
@@ -11,7 +12,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from tracking.models import MissedSkillEpisode, ProfileReminderDigestDismissal, UserPreference
 from tracking.reminders import apply_reminder_preference_change, reconcile_missed_skills
 
-from .forms import ProfileSettingsForm
+from .forms import ChangePasswordForm, ProfileSettingsForm
 
 
 def _return_url(request: HttpRequest) -> str:
@@ -75,6 +76,18 @@ def settings(request: HttpRequest) -> HttpResponse:
             ),
         },
     )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def change_password(request: HttpRequest) -> HttpResponse:
+    """Allow the signed-in user to replace their password securely."""
+    form = ChangePasswordForm(request.user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        return redirect("dashboard-preview")
+    return render(request, "profiles/change_password.html", {"form": form})
 
 
 @login_required

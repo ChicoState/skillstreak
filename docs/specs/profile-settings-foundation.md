@@ -37,8 +37,10 @@ migrating it would create unrelated schema churn.
 
 This is a profile foundation only. It creates no reminders, schedule
 calculations, profile alert list, email backend, delivery preference, reminder
-time, or password-reset behavior. IANA names are necessary because UTC offsets
-cannot safely represent daylight-saving changes for future local-time features.
+time, or password-reset behavior. It does provide an authenticated password
+change flow using Django's built-in password hashing and validators. IANA names
+are necessary because UTC offsets cannot safely represent daylight-saving
+changes for future local-time features.
 
 ### Before submitting
 
@@ -46,20 +48,22 @@ cannot safely represent daylight-saving changes for future local-time features.
 - [ ] Confirm a missing preference becomes `UTC` with reminders disabled.
 - [ ] Confirm invalid timezone input cannot persist.
 - [ ] Confirm no reminder event, email, or schedule behavior is introduced.
+- [ ] Confirm password changes require the current password and preserve the
+      changing user's session.
 
 ## Status
 
-Planned.
+Implemented.
 
 ## Objective
 
-Create the application's first authenticated profile and settings surface. It
-gives every signed-in user a stable place to see their account email and manage
-the two preferences needed before reminder delivery can exist: their timezone
-and whether reminders are enabled.
+Create the application's authenticated profile and settings surface. It gives
+every signed-in user a stable place to see their account email, manage their
+timezone and reminder preference, and change their password.
 
 The feature is deliberately a foundation. It does not create reminders, send
-email, calculate schedules, or decide where a future reminder is delivered.
+email, calculate schedules, decide where a future reminder is delivered, or
+provide password recovery.
 
 ## User Experience
 
@@ -71,6 +75,10 @@ email, calculate schedules, or decide where a future reminder is delivered.
 - The page offers an accessible on/off reminder preference, defaulting to off.
 - Saving only changes the signed-in user's own preference record; settings
   persist across refreshes and future sign-ins.
+- A signed-in user can follow **Change password**, enter their current password,
+  enter and confirm a new password, and return to the dashboard after saving.
+- A successful password change keeps the current session authenticated while
+  invalidating other sessions for that account.
 
 ## Data Contract
 
@@ -92,13 +100,15 @@ must never use user-supplied ownership identifiers.
 - Persisted reminder on/off preference and a persisted Green, Blue, or Purple
   color-palette choice.
 - Clear validation feedback for an invalid timezone value.
+- Authenticated password change using Django's `PasswordChangeForm`, including
+  the configured password validators and current-password verification.
 
 ## Out of Scope
 
 - In-profile reminder inboxes or alerts.
 - Email, push, or SMS delivery.
 - Reminder delivery choices, reminder time, reminder content, or escalation.
-- Editing email or password, including password reset.
+- Editing email or password reset/recovery.
 - Skill scheduling, skill creation/search, social features, and account
   profile fields such as names or avatars.
 
@@ -142,17 +152,20 @@ preference, _ = UserPreference.objects.get_or_create(
 - View tests cover authentication redirects, current-user-only updates,
   validation, CSRF, and persistence after a new client session.
 - Browser verification covers navigation to the settings page, saving a
-  timezone and reminder preference, and seeing the saved values after reload.
+  timezone and reminder preference, changing a password, and seeing saved
+  values after reload.
 
 ## Boundaries
 
 - Always: use Django migrations, validated IANA timezone values, POST + CSRF
-  for updates, and `request.user` for ownership.
+  for updates, `request.user` for ownership, Django-managed password hashing,
+  and `update_session_auth_hash` after a password change.
 - Ask first: add profile fields beyond email/timezone/reminder opt-in, move the
-  existing `UserPreference` table to a different Django app, or change account
-  credentials.
+  existing `UserPreference` table to a different Django app, add password
+  recovery, or change account credential policy.
 - Never: send a reminder/email from this slice, accept a user ID in the form,
-  expose another user's preferences, or commit credentials.
+  expose another user's preferences, log submitted passwords, or commit
+  credentials.
 
 ## Success Criteria
 
@@ -161,4 +174,7 @@ preference, _ = UserPreference.objects.get_or_create(
 - A newly created preference defaults to `UTC` and reminders disabled.
 - A valid timezone and reminder choice persist after reload and sign-in.
 - Invalid timezone input cannot be saved.
+- Password changes require the current password, validate the new password,
+  replace the old hash, preserve the current session, and invalidate other
+  sessions.
 - No reminder event, delivery attempt, or schedule calculation is introduced.
