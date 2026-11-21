@@ -36,6 +36,7 @@
           {% for error in form.theme.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
           <button class="primary-button" type="submit">Save settings</button>
         </form>
+        <p class="prototype-note"><a class="text-button" href="{% url 'profile-change-password' %}">Change password</a></p>
       </section>
     </main>
   </body>

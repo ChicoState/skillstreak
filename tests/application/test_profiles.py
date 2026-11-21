@@ -112,6 +112,194 @@ def test_profile_settings_rejects_a_request_without_a_csrf_token() -> None:
 
 
 @pytest.mark.django_db
+def test_anonymous_user_is_redirected_from_change_password(client) -> None:
+    response = client.get(reverse("profile-change-password"))
+
+    assert response.status_code == 302
+    assert response.url == "/sign-in?next=/profile/password/"
+
+
+@pytest.mark.django_db
+def test_change_password_form_renders_secure_password_fields(client) -> None:
+    user = get_user_model().objects.create_user(
+        email="password-form@csuchico.edu",
+        password="Secure skillstreak password 2026!",
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("profile-change-password"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'name="csrfmiddlewaretoken"' in content
+    assert 'autocomplete="current-password"' in content
+    assert content.count('autocomplete="new-password"') == 2
+
+
+@pytest.mark.django_db
+def test_authenticated_user_can_change_their_password_and_keep_their_session(client) -> None:
+    user_model = get_user_model()
+    old_password = "Secure skillstreak password 2026!"
+    new_password = "A completely different secure password 2026!"
+    user = user_model.objects.create_user(
+        email="change-password@csuchico.edu",
+        password=old_password,
+    )
+    client.force_login(user)
+    original_hash = user.password
+
+    response = client.post(
+        reverse("profile-change-password"),
+        {
+            "old_password": old_password,
+            "new_password1": new_password,
+            "new_password2": new_password,
+        },
+    )
+
+    user.refresh_from_db()
+    assert response.status_code == 302
+    assert response.url == reverse("dashboard-preview")
+    assert user.password != original_hash
+    assert user.check_password(new_password)
+    assert not user.check_password(old_password)
+    assert client.get(reverse("dashboard-preview")).status_code == 200
+
+
+@pytest.mark.django_db
+def test_password_change_rejects_an_incorrect_current_password(client) -> None:
+    old_password = "Secure skillstreak password 2026!"
+    user = get_user_model().objects.create_user(
+        email="wrong-current-password@csuchico.edu",
+        password=old_password,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("profile-change-password"),
+        {
+            "old_password": "not-the-current-password",
+            "new_password1": "A completely different secure password 2026!",
+            "new_password2": "A completely different secure password 2026!",
+        },
+    )
+
+    user.refresh_from_db()
+    assert response.status_code == 200
+    assert "Your old password was entered incorrectly" in response.content.decode()
+    assert user.check_password(old_password)
+
+
+@pytest.mark.django_db
+def test_password_change_rejects_mismatched_and_invalid_new_passwords(client) -> None:
+    old_password = "Secure skillstreak password 2026!"
+    user = get_user_model().objects.create_user(
+        email="invalid-new-password@csuchico.edu",
+        password=old_password,
+    )
+    client.force_login(user)
+
+    mismatch = client.post(
+        reverse("profile-change-password"),
+        {
+            "old_password": old_password,
+            "new_password1": "A completely different secure password 2026!",
+            "new_password2": "A different confirmation password 2026!",
+        },
+    )
+    weak = client.post(
+        reverse("profile-change-password"),
+        {
+            "old_password": old_password,
+            "new_password1": "12345678",
+            "new_password2": "12345678",
+        },
+    )
+
+    user.refresh_from_db()
+    assert mismatch.status_code == 200
+    assert "The two password fields" in mismatch.content.decode()
+    assert weak.status_code == 200
+    assert "This password is too common" in weak.content.decode()
+    assert user.check_password(old_password)
+
+
+@pytest.mark.django_db
+def test_password_change_is_current_user_only(client) -> None:
+    user_model = get_user_model()
+    user_password = "Secure skillstreak password 2026!"
+    other_password = "Another secure password 2026!"
+    user = user_model.objects.create_user(
+        email="password-owner@csuchico.edu",
+        password=user_password,
+    )
+    other_user = user_model.objects.create_user(
+        email="password-other@csuchico.edu",
+        password=other_password,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("profile-change-password"),
+        {
+            "old_password": user_password,
+            "new_password1": "A completely different secure password 2026!",
+            "new_password2": "A completely different secure password 2026!",
+            "user": other_user.pk,
+        },
+    )
+
+    other_user.refresh_from_db()
+    assert response.status_code == 302
+    assert other_user.check_password(other_password)
+
+
+@pytest.mark.django_db
+def test_password_change_invalidates_other_sessions_but_not_the_current_one(client) -> None:
+    user = get_user_model().objects.create_user(
+        email="password-sessions@csuchico.edu",
+        password="Secure skillstreak password 2026!",
+    )
+    other_client = Client()
+    client.force_login(user)
+    other_client.force_login(user)
+
+    response = client.post(
+        reverse("profile-change-password"),
+        {
+            "old_password": "Secure skillstreak password 2026!",
+            "new_password1": "A completely different secure password 2026!",
+            "new_password2": "A completely different secure password 2026!",
+        },
+    )
+
+    assert response.status_code == 302
+    assert client.get(reverse("dashboard-preview")).status_code == 200
+    assert other_client.get(reverse("dashboard-preview")).url == "/sign-in?next=/"
+
+
+@pytest.mark.django_db
+def test_password_change_requires_csrf_token() -> None:
+    user = get_user_model().objects.create_user(
+        email="password-csrf@csuchico.edu",
+        password="Secure skillstreak password 2026!",
+    )
+    client = Client(enforce_csrf_checks=True)
+    client.force_login(user)
+
+    response = client.post(
+        reverse("profile-change-password"),
+        {
+            "old_password": "Secure skillstreak password 2026!",
+            "new_password1": "A completely different secure password 2026!",
+            "new_password2": "A completely different secure password 2026!",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
 def test_dashboard_profile_menu_links_to_profile_settings(client) -> None:
     user = get_user_model().objects.create_user(
         email="timezone-menu@csuchico.edu",

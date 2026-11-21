@@ -245,6 +245,50 @@ def test_member_can_dismiss_the_profile_missed_skills_digest_in_the_browser(live
 
 
 @pytest.mark.django_db(transaction=True)
+def test_member_can_change_their_password_from_profile_settings(live_server) -> None:
+    old_password = "A safe browser test password 2026"
+    new_password = "A completely different browser password 2026!"
+    user = get_user_model().objects.create_user(
+        email="browser-password@csuchico.edu",
+        password=old_password,
+    )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+        page.goto(f"{live_server.url}/sign-in")
+        page.get_by_label("Email").fill(user.email)
+        page.get_by_label("Password").fill(old_password)
+        page.get_by_role("button", name="Sign in").click()
+
+        page.locator("summary.profile").click()
+        page.get_by_role("link", name="Profile & settings").click()
+        page.get_by_role("link", name="Change password").click()
+        expect(page.get_by_role("heading", name="Change password")).to_be_visible()
+
+        page.get_by_label("Current password").fill(old_password)
+        page.get_by_role("textbox", name="New password", exact=True).fill(new_password)
+        page.get_by_label("Confirm new password").fill(new_password)
+        page.get_by_role("button", name="Save password").click()
+        expect(page).to_have_url(f"{live_server.url}/")
+        expect(page.get_by_role("heading", name="Your skills", exact=True)).to_be_visible()
+
+        page.locator("summary.profile").click()
+        page.get_by_role("button", name="Log out").click()
+        expect(page).to_have_url(f"{live_server.url}/sign-in")
+
+        page.get_by_label("Email").fill(user.email)
+        page.get_by_label("Password").fill(old_password)
+        page.get_by_role("button", name="Sign in").click()
+        expect(page.get_by_text("The email or password is incorrect.")).to_be_visible()
+
+        page.get_by_label("Password").fill(new_password)
+        page.get_by_role("button", name="Sign in").click()
+        expect(page).to_have_url(f"{live_server.url}/")
+        browser.close()
+
+
+@pytest.mark.django_db(transaction=True)
 def test_member_can_edit_archive_and_restore_a_private_skill_in_the_browser(live_server) -> None:
     user = get_user_model().objects.create_user(
         email="private-management-browser-user@csuchico.edu",
